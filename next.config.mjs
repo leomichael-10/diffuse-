@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ['@prisma/client', 'bcryptjs', 'jsonwebtoken', 'nodemailer'],
   allowedDevOrigins: [
     '192.168.1.8',
     'localhost',
