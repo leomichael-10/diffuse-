@@ -1,0 +1,39 @@
+import { NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
+import prisma from '../../../../lib/prisma.js'
+import { signToken } from '../../../../lib/auth.js'
+
+export async function POST(request) {
+  try {
+    const { email, password } = await request.json()
+
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } })
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+    }
+
+    if (user.isBanned) {
+      return NextResponse.json({ error: 'Your account has been suspended.' }, { status: 403 })
+    }
+
+    const token = await signToken({
+      userId:   user.id,
+      email:    user.email,
+      role:     user.role,
+      isBanned: user.isBanned,
+    })
+
+    const response = NextResponse.json({ token, role: user.role, name: user.name, email: user.email })
+    response.cookies.set('token', token, { httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 7, path: '/' })
+
+    return response
+  } catch (err) {
+    console.error('Login error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

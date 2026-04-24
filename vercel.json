@@ -1,0 +1,22 @@
+{
+  "buildCommand": "prisma generate && next build",
+  "framework": "nextjs",
+  "regions": ["fra1"],
+  "env": {
+    "DATABASE_URL":            "@database-url",
+    "JWT_SECRET":              "@jwt-secret",
+    "CLOUDINARY_CLOUD_NAME":   "@cloudinary-cloud-name",
+    "CLOUDINARY_API_KEY":      "@cloudinary-api-key",
+    "CLOUDINARY_API_SECRET":   "@cloudinary-api-secret",
+    "TWILIO_ACCOUNT_SID":      "@twilio-account-sid",
+    "TWILIO_AUTH_TOKEN":       "@twilio-auth-token",
+    "TWILIO_WHATSAPP_FROM":    "@twilio-whatsapp-from",
+    "SMTP_HOST":               "@smtp-host",
+    "SMTP_PORT":               "@smtp-port",
+    "SMTP_SECURE":             "@smtp-secure",
+    "SMTP_USER":               "@smtp-user",
+    "SMTP_PASS":               "@smtp-pass",
+    "EMAIL_FROM":              "@email-from",
+    "NEXT_PUBLIC_APP_URL":     "@next-public-app-url"
+  }
+}

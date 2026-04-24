@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git ls-tree *)",
+      "Bash(xargs -I {} git show HEAD:{})",
+      "Bash(git stash *)",
+      "Bash(npx prisma *)",
+      "Bash(./node_modules/.bin/prisma migrate *)",
+      "Bash(node_modules/.bin/prisma migrate *)",
+      "Bash(node scripts/seed.js)",
+      "Bash(PRISMA_MIGRATE_SKIP_GENERATE=true node_modules/.bin/prisma migrate dev --name diffuse_single_brand --skip-seed 2>&1 <<< \"y\")",
+      "Bash(node_modules/.bin/prisma db *)",
+      "Bash(node -e ' *)",
+      "Bash(npm run *)",
+      "Read(//mnt/skills/user/frontend-design/**)",
+      "Read(//mnt/skills/**)",
+      "Bash(curl -s http://localhost:3000/api/orders)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(node_modules/.bin/prisma generate *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\miche\\.claude\\projects\\c--Users-miche-OneDrive-Documents-Diffuse-final\\memory"
+    ]
+  }
+}
