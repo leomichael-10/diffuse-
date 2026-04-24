@@ -3,28 +3,36 @@ import prisma from '../../../../lib/prisma.js'
 
 export async function GET(request, { params }) {
   const { id: rawId } = await params
-  const id = Number(rawId)
-  if (!id || isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
+  const id = parseInt(rawId, 10)
+  if (!id || isNaN(id)) return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 })
 
-  const product = await prisma.product.findUnique({
-    where: { id },
-    include: {
-      category: { select: { id: true, name: true, icon: true } },
-      variants: { orderBy: [{ color: 'asc' }, { size: 'asc' }] },
-      images:   { orderBy: { sortOrder: 'asc' } },
-      reviews: {
-        include: { user: { select: { name: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
+  try {
+    const product = await prisma.product.findFirst({
+      where: { id, isActive: true },
+      include: {
+        category: { select: { id: true, name: true } },
+        variants: {
+          where:   { stockQty: { gte: 0 } },
+          orderBy: { size: 'asc' },
+        },
+        images:  { orderBy: { sortOrder: 'asc' } },
+        reviews: {
+          include: { user: { select: { name: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
       },
-    },
-  })
+    })
 
-  if (!product || !product.isActive) {
-    return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(JSON.parse(JSON.stringify(product)))
+  } catch (error) {
+    console.error('GET /api/products/[id] error:', error)
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
-
-  return NextResponse.json(product)
 }
 
 export async function PUT(request, { params }) {
