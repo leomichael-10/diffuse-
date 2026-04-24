@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '../../components/Navbar.js'
 import { formatPrice } from '../../lib/format.js'
+import ImageDropzone from '../../components/ImageDropzone.js'
 
 const TABS = ['Analytics', 'Products', 'Orders', 'Customers', 'Bundles', 'Promos']
 
@@ -613,8 +614,9 @@ function ProductForm({ product, categories, onClose, onSaved }) {
   const isNew = !product.id
   const [form,    setForm]    = useState({ ...product })
   const [variants, setVariants] = useState(product.variants?.length ? product.variants : [{ size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '' }])
-  const [images,  setImages]  = useState(product.images || [])
-  const [imgUrl,  setImgUrl]  = useState('')
+  const [images,  setImages]  = useState(
+    (product.images || []).map(img => typeof img === 'string' ? img : img.url).filter(Boolean)
+  )
   const [saving,  setSaving]  = useState(false)
   const [error,   setError]   = useState('')
 
@@ -622,8 +624,6 @@ function ProductForm({ product, categories, onClose, onSaved }) {
   function setVariantField(idx, k, v) { setVariants(prev => prev.map((vr, i) => i === idx ? { ...vr, [k]: v } : vr)) }
   function addVariant() { setVariants(p => [...p, { size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '' }]) }
   function removeVariant(idx) { setVariants(p => p.filter((_, i) => i !== idx)) }
-  function addImage() { if (imgUrl.trim()) { setImages(p => [...p, { url: imgUrl.trim(), altText: '' }]); setImgUrl('') } }
-  function removeImage(idx) { setImages(p => p.filter((_, i) => i !== idx)) }
 
   async function save() {
     setError('')
@@ -633,7 +633,7 @@ function ProductForm({ product, categories, onClose, onSaved }) {
         ...form,
         categoryId: form.categoryId ? Number(form.categoryId) : null,
         variants: variants.map(v => ({ ...v, priceAed: Number(v.priceAed), stockQty: Number(v.stockQty) })),
-        images,
+        imageUrls: images,
       }
       const res = await fetch(isNew ? '/api/products' : `/api/products/${product.id}`, {
         method:  isNew ? 'POST' : 'PUT',
@@ -700,18 +700,10 @@ function ProductForm({ product, categories, onClose, onSaved }) {
 
           {/* Images */}
           <div style={{ marginTop: '0.5rem' }}>
-            <div style={{ fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.75rem' }}>Images (URLs)</div>
-            {images.map((img, i) => (
-              <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
-                <input className="input" value={img.url} readOnly style={{ fontSize: '0.75rem', flex: 1 }} />
-                <button onClick={() => removeImage(i)} style={{ background: 'none', border: '1px solid var(--gray-mid)', cursor: 'pointer', padding: '0.35rem 0.6rem', fontSize: '0.8rem', color: '#EF4444' }}>×</button>
-              </div>
-            ))}
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input className="input" placeholder="https://..." value={imgUrl} onChange={e => setImgUrl(e.target.value)} style={{ fontSize: '0.8rem', flex: 1 }}
-                onKeyDown={e => e.key === 'Enter' && addImage()} />
-              <button onClick={addImage} className="btn btn-outline btn-sm">Add</button>
+            <div style={{ fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.875rem' }}>
+              Upload Product Images (up to 5)
             </div>
+            <ImageDropzone images={images} onChange={setImages} max={5} />
           </div>
         </div>
 
