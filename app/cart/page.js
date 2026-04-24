@@ -24,6 +24,10 @@ export default function CartPage() {
     fullName: '', phone: '', street: '', district: '', city: 'Cairo', notes: '',
   })
   const [payMethod, setPayMethod] = useState('cash_on_delivery')
+  const [promoInput,  setPromoInput]  = useState('')
+  const [promo,       setPromo]       = useState(null)  // { code, discount, discountType, discountValue }
+  const [promoError,  setPromoError]  = useState('')
+  const [promoLoading,setPromoLoading]= useState(false)
 
   useEffect(() => {
     try { setItems(JSON.parse(localStorage.getItem('diffuse_cart') || '[]')) }
@@ -47,9 +51,31 @@ export default function CartPage() {
   }
 
   const subtotal    = items.reduce((s, it) => s + it.price * (it.qty || it.quantity || 1), 0)
+  const discount    = promo?.discount || 0
   const deliveryFee = subtotal >= DELIVERY_THRESHOLD ? 0 : (items.length > 0 ? DELIVERY_FEE : 0)
   const vat         = Math.round(subtotal * 0.14)
-  const total       = subtotal + deliveryFee
+  const total       = Math.max(0, subtotal - discount) + deliveryFee
+
+  async function applyPromo() {
+    if (!promoInput.trim()) return
+    setPromoLoading(true)
+    setPromoError('')
+    try {
+      const res = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: promoInput.trim(), orderTotal: subtotal }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setPromoError(data.error || 'Invalid code'); return }
+      setPromo(data)
+      toast.success(`Promo applied — ${data.discountType === 'percent' ? data.discountValue + '% off' : formatPrice(data.discountValue) + ' off'}`)
+    } catch {
+      setPromoError('Could not validate promo code')
+    } finally {
+      setPromoLoading(false)
+    }
+  }
 
   async function proceedToCheckout() {
     const user = JSON.parse(localStorage.getItem('diffuse_user') || 'null')
@@ -73,6 +99,8 @@ export default function CartPage() {
           deliveryAddress,
           paymentMethod: payMethod,
           notes: address.notes || null,
+          promoCode: promo?.code || null,
+          discountAed: promo?.discount || null,
         }),
       })
       const data = await res.json()
@@ -320,10 +348,39 @@ export default function CartPage() {
                   ))}
                 </div>
 
+                {/* Promo code */}
+                <div style={{ marginBottom: '1rem' }}>
+                  {promo ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.75rem', background: '#f0faf0', border: '1px solid #c6eac6', fontSize: '0.72rem' }}>
+                      <span style={{ color: '#2e7d32' }}>✓ {promo.code} applied</span>
+                      <button onClick={() => { setPromo(null); setPromoInput('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)', fontSize: '0.65rem', fontFamily: 'inherit', padding: 0 }}>Remove</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        value={promoInput}
+                        onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoError('') }}
+                        onKeyDown={e => e.key === 'Enter' && applyPromo()}
+                        placeholder="Promo code"
+                        style={{ flex: 1, border: '1px solid var(--gray-300)', padding: '0.5rem 0.75rem', fontSize: '0.75rem', fontFamily: 'inherit', outline: 'none', background: 'var(--white)' }}
+                      />
+                      <button onClick={applyPromo} disabled={promoLoading || !promoInput.trim()} className="btn btn-outline btn-sm" style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', fontSize: '0.65rem' }}>
+                        {promoLoading ? '…' : 'Apply'}
+                      </button>
+                    </div>
+                  )}
+                  {promoError && <p style={{ fontSize: '0.65rem', color: '#c62828', marginTop: '0.35rem' }}>{promoError}</p>}
+                </div>
+
                 <div style={{ borderTop: '1px solid var(--gray-200)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--gray-500)' }}>
                     <span>Subtotal</span><span>{formatPrice(subtotal)}</span>
                   </div>
+                  {discount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#2e7d32' }}>
+                      <span>Discount ({promo?.code})</span><span>−{formatPrice(discount)}</span>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--gray-500)' }}>
                     <span>Delivery</span>
                     <span style={{ color: deliveryFee === 0 ? 'var(--sand)' : 'inherit' }}>

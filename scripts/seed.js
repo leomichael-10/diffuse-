@@ -256,6 +256,22 @@ async function main() {
     console.log(`  Created: ${pd.name}`)
   }
 
+  // Promo codes
+  console.log('\nSeeding promo codes...')
+  const promos = [
+    { code: 'WELCOME10', discountType: 'percent',  discountValue: 10, minOrderAed: 200 },
+    { code: 'CAIRO50',   discountType: 'fixed',    discountValue: 50, minOrderAed: 500 },
+    { code: 'DIFFUSE20', discountType: 'percent',  discountValue: 20, minOrderAed: 800 },
+  ]
+  for (const promo of promos) {
+    await prisma.promoCode.upsert({
+      where:  { code: promo.code },
+      update: {},
+      create: promo,
+    })
+    console.log(`  Upserted: ${promo.code}`)
+  }
+
   console.log('\nSeed complete.')
   console.log('Admin login: admin@diffuse.eg / diffuse2024')
 }

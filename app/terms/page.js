@@ -17,7 +17,7 @@ export default function TermsPage() {
         </div>
         <div className="section" style={{ padding: 'clamp(2rem, 4vw, 4rem) clamp(1.25rem, 4vw, 3rem)', maxWidth: '760px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-            <p style={{ fontSize: '0.78rem', color: 'var(--gray-400)' }}>Last updated: January 2025</p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--gray-400)' }}>Last updated: January 2026</p>
 
             {[
               {

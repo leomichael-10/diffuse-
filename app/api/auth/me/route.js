@@ -3,7 +3,7 @@ import { jwtVerify }   from 'jose'
 import { hash, compare } from 'bcryptjs'
 import prisma from '../../../../lib/prisma.js'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'diffuse-secret-key-2024')
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'diffuse-secret-key-2026')
 
 async function getUserId(request) {
   const token = request.cookies.get('token')?.value

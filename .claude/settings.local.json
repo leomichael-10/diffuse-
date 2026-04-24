@@ -16,10 +16,14 @@
       "Read(//mnt/skills/**)",
       "Bash(curl -s http://localhost:3000/api/orders)",
       "Bash(curl -s http://localhost:3000/)",
-      "Bash(node_modules/.bin/prisma generate *)"
+      "Bash(node_modules/.bin/prisma generate *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
-      "c:\\Users\\miche\\.claude\\projects\\c--Users-miche-OneDrive-Documents-Diffuse-final\\memory"
+      "c:\\Users\\miche\\.claude\\projects\\c--Users-miche-OneDrive-Documents-Diffuse-final\\memory",
+      "c:\\Users\\miche\\OneDrive\\Documents\\Diffuse_final\\app\\api\\bundles"
     ]
   }
 }

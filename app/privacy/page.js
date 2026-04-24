@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         </div>
         <div className="section" style={{ padding: 'clamp(2rem,4vw,4rem) clamp(1.25rem,4vw,3rem)', maxWidth: '760px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-            <p style={{ fontSize: '0.78rem', color: 'var(--gray-400)' }}>Last updated: January 2025</p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--gray-400)' }}>Last updated: January 2026</p>
             {[
               { title: '1. Data We Collect', body: 'We collect personal information you provide when creating an account, placing an order, or contacting us: name, email address, phone number, delivery address, and payment details. We also collect browsing data such as pages visited and session duration to improve our service.' },
               { title: '2. How We Use Your Data', body: 'Your data is used to process orders, deliver products, send order updates, respond to enquiries, and improve our website. We do not sell or share your personal information with third parties for marketing purposes.' },

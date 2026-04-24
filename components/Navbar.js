@@ -131,6 +131,7 @@ export default function Navbar({ isAdmin = false }) {
               ['/products?sort=new',     'New In'],
               ['/products?gender=Men',   'Men'],
               ['/products?gender=Women', 'Women'],
+              ['/bundles',               'Bundles'],
             ].map(([href, label]) => (
               <Link key={href} href={href}
                 className={`nav-link${pathname === href ? ' active' : ''}`}>
@@ -261,6 +262,7 @@ export default function Navbar({ isAdmin = false }) {
               ['/products?sort=new',     'New In'],
               ['/products?gender=Men',   'Men'],
               ['/products?gender=Women', 'Women'],
+              ['/bundles',               'Bundles'],
             ].map(([href, label]) => (
               <Link key={href} href={href}
                 onClick={() => setMenuOpen(false)}

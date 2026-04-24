@@ -153,7 +153,7 @@ export async function POST(request) {
   }
 
   try {
-    const { items, deliveryAddress, paymentMethod, notes } = await request.json()
+    const { items, deliveryAddress, paymentMethod, notes, promoCode, discountAed } = await request.json()
 
     if (!items?.length)            return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     if (!deliveryAddress?.trim())  return NextResponse.json({ error: 'Delivery address is required' }, { status: 400 })
@@ -179,8 +179,9 @@ export async function POST(request) {
       const v = variants.find(v => v.id === Number(item.variantId))
       return sum + Number(v.priceAed) * item.quantity
     }, 0)
+    const discount    = promoCode && discountAed ? Number(discountAed) : 0
     const deliveryFee = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE
-    const total       = subtotal + deliveryFee
+    const total       = Math.max(0, subtotal - discount) + deliveryFee
 
     const order = await prisma.$transaction(async (tx) => {
       const created = await tx.order.create({
@@ -191,6 +192,8 @@ export async function POST(request) {
           deliveryAddress: deliveryAddress.trim(),
           paymentMethod:   paymentMethod || 'cash_on_delivery',
           notes:           notes?.trim() || null,
+          promoCode:       promoCode || null,
+          discountAed:     discount || null,
           items: {
             create: items.map(item => {
               const v = variants.find(v => v.id === Number(item.variantId))
@@ -210,6 +213,11 @@ export async function POST(request) {
 
       return created
     })
+
+    // Increment promo usage (non-blocking)
+    if (promoCode) {
+      prisma.promoCode.update({ where: { code: promoCode.toUpperCase() }, data: { usedCount: { increment: 1 } } }).catch(() => {})
+    }
 
     // Send emails (non-blocking — don't fail the order if email fails)
     sendOrderEmails({

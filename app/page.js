@@ -37,6 +37,49 @@ const CATEGORIES = [
   },
 ]
 
+function BundlesStrip() {
+  const [bundles, setBundles] = useState([])
+  useEffect(() => {
+    fetch('/api/bundles').then(r => r.json()).then(d => setBundles(Array.isArray(d) ? d.slice(0, 3) : [])).catch(() => {})
+  }, [])
+
+  if (bundles.length === 0) return null
+
+  return (
+    <section style={{ borderTop: '1px solid var(--gray-300)', padding: '6rem 0' }}>
+      <div className="section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--gray-300)' }}>
+          <div>
+            <p className="t-label" style={{ marginBottom: '0.75rem' }}>Value Sets</p>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.75rem, 3vw, 2.75rem)', fontWeight: 300, letterSpacing: '0.04em', color: 'var(--black)' }}>
+              Bundles
+            </h2>
+          </div>
+          <Link href="/bundles" style={{ fontSize: '0.62rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--black)', borderBottom: '1px solid var(--black)', paddingBottom: '2px' }}>
+            View All
+          </Link>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
+          {bundles.map(b => {
+            const img = b.imageUrl || b.items?.[0]?.variant?.product?.images?.[0]?.url
+            return (
+              <Link key={b.id} href="/bundles" style={{ textDecoration: 'none', color: 'inherit', border: '1px solid var(--gray-200)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ aspectRatio: '4/3', background: img ? `url(${img}) center/cover` : 'var(--gray-100)' }} />
+                <div style={{ padding: '1.25rem' }}>
+                  <p style={{ fontSize: '0.88rem', fontWeight: 500, marginBottom: '0.25rem' }}>{b.name}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--gray-500)', fontFamily: 'var(--font-serif)' }}>
+                    EGP {Number(b.priceAed).toLocaleString('en-EG')}
+                  </p>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function HomePage() {
   const [featured, setFeatured] = useState([])
   const [loading,  setLoading]  = useState(true)
@@ -84,7 +127,7 @@ export default function HomePage() {
         <div style={{ position: 'relative', zIndex: 1 }}>
           {/* Season label */}
           <p className="t-label anim-fade-up" style={{ marginBottom: '2.5rem', color: 'var(--gray-500)' }}>
-            New Season — SS 2025
+            New Season — SS 2026
           </p>
 
           {/* Brand name — Cormorant Garamond */}
@@ -178,7 +221,7 @@ export default function HomePage() {
         }}>
           {Array(4).fill(null).map((_, i) => (
             <span key={i} style={{ display: 'flex', gap: '5rem' }}>
-              {['Free Delivery Over EGP 500', 'New Season 2025', 'Quality Basics', 'Timeless Style', 'Wear the Difference'].map(t => (
+              {['Free Delivery Over EGP 500', 'New Season 2026', 'Quality Basics', 'Timeless Style', 'Wear the Difference'].map(t => (
                 <span key={t} style={{ fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)' }}>
                   {t} <span style={{ color: 'var(--sand)', margin: '0 1rem' }}>—</span>
                 </span>
@@ -252,7 +295,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 5. EDITORIAL STATEMENT ──────────────────────────────── */}
+      {/* ── 5. BUNDLES ──────────────────────────────────────────── */}
+      <BundlesStrip />
+
+      {/* ── 5b. EDITORIAL STATEMENT ─────────────────────────────── */}
       <section style={{
         borderTop: '1px solid var(--gray-300)',
         background: 'var(--gray-100)',
@@ -392,7 +438,7 @@ export default function HomePage() {
             gap: '1rem',
           }}>
             <span style={{ fontSize: '0.68rem', color: 'var(--gray-400)', letterSpacing: '0.06em' }}>
-              © 2025 Diffuse Egypt. All rights reserved.
+              © 2026 Diffuse Egypt. All rights reserved.
             </span>
             <span style={{ fontSize: '0.68rem', color: 'var(--gray-400)', letterSpacing: '0.06em' }}>
               Free delivery on orders over EGP 500

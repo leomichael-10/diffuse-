@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Navbar from '../../components/Navbar.js'
 import { formatPrice } from '../../lib/format.js'
 
-const TABS = ['Analytics', 'Products', 'Orders', 'Customers']
+const TABS = ['Analytics', 'Products', 'Orders', 'Customers', 'Bundles', 'Promos']
 
 const STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
 
@@ -21,12 +21,18 @@ export default function AdminPage() {
   const [msg,       setMsg]       = useState('')
   const [categories, setCategories] = useState([])
   const [stats,     setStats]     = useState(null)
+  const [bundles,   setBundles]   = useState([])
+  const [promos,    setPromos]    = useState([])
+  const [newBundle, setNewBundle] = useState({ name: '', description: '', imageUrl: '', priceAed: '' })
+  const [newPromo,  setNewPromo]  = useState({ code: '', discountType: 'percent', discountValue: '', minOrderAed: '', maxUses: '', expiresAt: '' })
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('diffuse_user') || 'null')
     if (!user || user.role !== 'admin') { router.push('/login'); return }
     loadAll()
     fetch('/api/categories').then(r => r.json()).then(d => setCategories(Array.isArray(d) ? d : []))
+    fetch('/api/bundles').then(r => r.json()).then(d => setBundles(Array.isArray(d) ? d : []))
+    fetch('/api/admin/promos').then(r => r.json()).then(d => setPromos(Array.isArray(d) ? d : []))
   }, [])
 
   async function loadAll() {
@@ -438,6 +444,160 @@ export default function AdminPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {tab === 'Bundles' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                  {/* Create bundle */}
+                  <div style={{ background: 'var(--white)', border: '1px solid var(--gray-mid)', padding: '1.5rem' }}>
+                    <p style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 500, marginBottom: '1.25rem' }}>Create Bundle</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <input className="input-line" placeholder="Bundle name" value={newBundle.name}
+                        onChange={e => setNewBundle(b => ({ ...b, name: e.target.value }))} />
+                      <input className="input-line" placeholder="Price (EGP)" type="number" value={newBundle.priceAed}
+                        onChange={e => setNewBundle(b => ({ ...b, priceAed: e.target.value }))} />
+                      <input className="input-line" placeholder="Image URL (optional)" value={newBundle.imageUrl}
+                        onChange={e => setNewBundle(b => ({ ...b, imageUrl: e.target.value }))} />
+                      <input className="input-line" placeholder="Description (optional)" value={newBundle.description}
+                        onChange={e => setNewBundle(b => ({ ...b, description: e.target.value }))} />
+                    </div>
+                    <button className="btn btn-black btn-sm" onClick={async () => {
+                      if (!newBundle.name || !newBundle.priceAed) return alert('Name and price required')
+                      const res = await fetch('/api/bundles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newBundle) })
+                      if (res.ok) {
+                        const b = await res.json()
+                        setBundles(prev => [b, ...prev])
+                        setNewBundle({ name: '', description: '', imageUrl: '', priceAed: '' })
+                      } else alert('Failed to create bundle')
+                    }}>Create Bundle</button>
+                  </div>
+
+                  {/* Bundle list */}
+                  <div style={{ background: 'var(--white)', border: '1px solid var(--gray-mid)' }}>
+                    {bundles.length === 0 ? (
+                      <p style={{ padding: '2rem', color: 'var(--gray-text)', fontSize: '0.8rem' }}>No bundles yet.</p>
+                    ) : (
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--gray-mid)' }}>
+                            {['Name', 'Price', 'Items', 'Active', 'Actions'].map(h => (
+                              <th key={h} style={{ padding: '0.875rem 1rem', fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-text)', fontWeight: 500, textAlign: 'left' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bundles.map(b => (
+                            <tr key={b.id} style={{ borderBottom: '1px solid var(--gray-mid)' }}>
+                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.8rem', fontWeight: 500 }}>{b.name}</td>
+                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.8rem' }}>{formatPrice(b.priceAed)}</td>
+                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', color: 'var(--gray-text)' }}>{b.items?.length || 0}</td>
+                              <td style={{ padding: '0.875rem 1rem' }}>
+                                <span style={{ fontSize: '0.65rem', letterSpacing: '0.08em', color: b.isActive ? '#2e7d32' : 'var(--gray-text)' }}>
+                                  {b.isActive ? 'Active' : 'Hidden'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.875rem 1rem' }}>
+                                <button onClick={async () => {
+                                  if (!confirm('Delete this bundle?')) return
+                                  const res = await fetch(`/api/bundles/${b.id}`, { method: 'DELETE' })
+                                  if (res.ok) setBundles(prev => prev.filter(x => x.id !== b.id))
+                                }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.65rem', color: '#c62828', fontFamily: 'inherit', letterSpacing: '0.08em' }}>
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {tab === 'Promos' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                  {/* Create promo */}
+                  <div style={{ background: 'var(--white)', border: '1px solid var(--gray-mid)', padding: '1.5rem' }}>
+                    <p style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 500, marginBottom: '1.25rem' }}>Create Promo Code</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <input className="input-line" placeholder="Code (e.g. WELCOME10)" value={newPromo.code}
+                        onChange={e => setNewPromo(p => ({ ...p, code: e.target.value.toUpperCase() }))} />
+                      <select className="input-line" value={newPromo.discountType}
+                        onChange={e => setNewPromo(p => ({ ...p, discountType: e.target.value }))}>
+                        <option value="percent">Percent (%)</option>
+                        <option value="fixed">Fixed (EGP)</option>
+                      </select>
+                      <input className="input-line" placeholder="Discount value" type="number" value={newPromo.discountValue}
+                        onChange={e => setNewPromo(p => ({ ...p, discountValue: e.target.value }))} />
+                      <input className="input-line" placeholder="Min order EGP (optional)" type="number" value={newPromo.minOrderAed}
+                        onChange={e => setNewPromo(p => ({ ...p, minOrderAed: e.target.value }))} />
+                      <input className="input-line" placeholder="Max uses (optional)" type="number" value={newPromo.maxUses}
+                        onChange={e => setNewPromo(p => ({ ...p, maxUses: e.target.value }))} />
+                      <input className="input-line" placeholder="Expires at (optional)" type="date" value={newPromo.expiresAt}
+                        onChange={e => setNewPromo(p => ({ ...p, expiresAt: e.target.value }))} />
+                    </div>
+                    <button className="btn btn-black btn-sm" onClick={async () => {
+                      if (!newPromo.code || !newPromo.discountValue) return alert('Code and discount required')
+                      const res = await fetch('/api/admin/promos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newPromo) })
+                      const data = await res.json()
+                      if (res.ok) {
+                        setPromos(prev => [data, ...prev])
+                        setNewPromo({ code: '', discountType: 'percent', discountValue: '', minOrderAed: '', maxUses: '', expiresAt: '' })
+                      } else alert(data.error || 'Failed to create promo')
+                    }}>Create Promo</button>
+                  </div>
+
+                  {/* Promo list */}
+                  <div style={{ background: 'var(--white)', border: '1px solid var(--gray-mid)' }}>
+                    {promos.length === 0 ? (
+                      <p style={{ padding: '2rem', color: 'var(--gray-text)', fontSize: '0.8rem' }}>No promo codes yet.</p>
+                    ) : (
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--gray-mid)' }}>
+                            {['Code', 'Discount', 'Min Order', 'Used / Max', 'Expires', 'Actions'].map(h => (
+                              <th key={h} style={{ padding: '0.875rem 1rem', fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-text)', fontWeight: 500, textAlign: 'left' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {promos.map(p => (
+                            <tr key={p.id} style={{ borderBottom: '1px solid var(--gray-mid)' }}>
+                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.1em' }}>{p.code}</td>
+                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.8rem' }}>
+                                {p.discountType === 'percent' ? `${Number(p.discountValue)}%` : formatPrice(p.discountValue)}
+                              </td>
+                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', color: 'var(--gray-text)' }}>
+                                {p.minOrderAed ? formatPrice(p.minOrderAed) : '—'}
+                              </td>
+                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', color: 'var(--gray-text)' }}>
+                                {p.usedCount} / {p.maxUses ?? '∞'}
+                              </td>
+                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', color: 'var(--gray-text)' }}>
+                                {p.expiresAt ? new Date(p.expiresAt).toLocaleDateString('en-GB') : '—'}
+                              </td>
+                              <td style={{ padding: '0.875rem 1rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                <button onClick={async () => {
+                                  const res = await fetch(`/api/admin/promos/${p.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive: !p.isActive }) })
+                                  if (res.ok) setPromos(prev => prev.map(x => x.id === p.id ? { ...x, isActive: !p.isActive } : x))
+                                }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.65rem', color: p.isActive ? '#c62828' : '#2e7d32', fontFamily: 'inherit', letterSpacing: '0.08em' }}>
+                                  {p.isActive ? 'Disable' : 'Enable'}
+                                </button>
+                                <button onClick={async () => {
+                                  if (!confirm('Delete this promo?')) return
+                                  const res = await fetch(`/api/admin/promos/${p.id}`, { method: 'DELETE' })
+                                  if (res.ok) setPromos(prev => prev.filter(x => x.id !== p.id))
+                                }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.65rem', color: '#c62828', fontFamily: 'inherit', letterSpacing: '0.08em' }}>
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 </div>
               )}
             </>
