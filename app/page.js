@@ -447,6 +447,10 @@ export default function HomePage() {
         </div>
       </footer>
 
+      <div style={{ textAlign: 'center', padding: '0.75rem', borderTop: '1px solid var(--gray-200)', background: 'var(--white)' }}>
+        <span style={{ fontSize: '0.6rem', letterSpacing: '0.1em', color: 'var(--gray-400)', textTransform: 'uppercase' }}>Powered by Mikey</span>
+      </div>
+
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         '@context': 'https://schema.org',
         '@type':    'Organization',
