@@ -14,6 +14,11 @@ export async function GET(request, { params }) {
         variants: {
           where:   { stockQty: { gte: 0 } },
           orderBy: { size: 'asc' },
+          select: {
+            id: true, size: true, color: true, colorHex: true,
+            material: true, priceAed: true, stockQty: true, skuCode: true,
+            image: true,
+          },
         },
         images:  { orderBy: { sortOrder: 'asc' } },
         reviews: {

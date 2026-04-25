@@ -106,6 +106,7 @@ model ProductVariant {
   priceAed  Decimal  @db.Decimal(10, 2)
   stockQty  Int      @default(0)
   skuCode   String?  @unique
+  image     String?
   createdAt DateTime @default(now())
 
   product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)

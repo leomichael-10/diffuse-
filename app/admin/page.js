@@ -610,6 +610,37 @@ export default function AdminPage() {
 }
 
 /* ─── Inline Product Form ─── */
+function VariantImageUpload({ image, onChange }) {
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.urls?.[0]) onChange(data.urls[0])
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <label className="label" style={{ marginBottom: 0 }}>Variant Image</label>
+      {image && <img src={image} alt="" style={{ width: 40, height: 48, objectFit: 'cover', border: '1px solid var(--gray-mid)' }} />}
+      <label style={{ cursor: 'pointer', fontSize: '0.7rem', color: 'var(--gray-text)', textDecoration: 'underline' }}>
+        {uploading ? 'Uploading…' : image ? 'Change' : 'Upload'}
+        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} style={{ display: 'none' }} disabled={uploading} />
+      </label>
+      {image && <button onClick={() => onChange('')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#EF4444', fontFamily: 'inherit' }}>Remove</button>}
+    </div>
+  )
+}
+
 function ProductForm({ product, categories, onClose, onSaved }) {
   const isNew = !product.id
   const [form,    setForm]    = useState({ ...product })
@@ -622,7 +653,7 @@ function ProductForm({ product, categories, onClose, onSaved }) {
 
   function setField(k, v) { setForm(p => ({ ...p, [k]: v })) }
   function setVariantField(idx, k, v) { setVariants(prev => prev.map((vr, i) => i === idx ? { ...vr, [k]: v } : vr)) }
-  function addVariant() { setVariants(p => [...p, { size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '' }]) }
+  function addVariant() { setVariants(p => [...p, { size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '', image: '' }]) }
   function removeVariant(idx) { setVariants(p => p.filter((_, i) => i !== idx)) }
 
   async function save() {
@@ -733,6 +764,7 @@ function ProductForm({ product, categories, onClose, onSaved }) {
                 <input type="color" value={v.colorHex || '#000000'} onChange={e => setVariantField(idx, 'colorHex', e.target.value)} style={{ width: '36px', height: '28px', border: '1px solid var(--gray-mid)', cursor: 'pointer', padding: '1px' }} />
                 <span style={{ fontSize: '0.7rem', color: 'var(--gray-text)' }}>{v.colorHex}</span>
               </div>
+              <VariantImageUpload image={v.image || ''} onChange={url => setVariantField(idx, 'image', url)} />
               {variants.length > 1 && (
                 <button onClick={() => removeVariant(idx)}
                   style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#EF4444', fontFamily: 'inherit' }}>Remove</button>

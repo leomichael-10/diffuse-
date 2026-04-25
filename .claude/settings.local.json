@@ -19,7 +19,10 @@
       "Bash(node_modules/.bin/prisma generate *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(npx vercel *)",
+      "Bash(node -e \"require\\('react-dropzone'\\); console.log\\('ok'\\)\")",
+      "Read(//c/Users/miche/AppData/Local/Temp/claude/c--Users-miche-OneDrive-Documents-Diffuse-final/a04883c9-30b1-4c5b-afa8-9b8486bed9ca/tasks/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\miche\\.claude\\projects\\c--Users-miche-OneDrive-Documents-Diffuse-final\\memory",

@@ -5,12 +5,39 @@ import { useRouter } from 'next/navigation'
 import Navbar from '../../../../components/Navbar.js'
 import ImageDropzone from '../../../../components/ImageDropzone.js'
 
+function VariantImageUpload({ image, onChange }) {
+  const [uploading, setUploading] = useState(false)
+  async function handleFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.urls?.[0]) onChange(data.urls[0])
+    } finally { setUploading(false) }
+  }
+  return (
+    <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>Variant Image</span>
+      {image && <img src={image} alt="" style={{ width: 40, height: 48, objectFit: 'cover', border: '1px solid #E2E8F0', borderRadius: 4 }} />}
+      <label style={{ cursor: 'pointer', fontSize: '0.75rem', color: '#6366F1', textDecoration: 'underline' }}>
+        {uploading ? 'Uploading…' : image ? 'Change' : 'Upload photo'}
+        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} style={{ display: 'none' }} disabled={uploading} />
+      </label>
+      {image && <button onClick={() => onChange('')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#EF4444', fontFamily: 'inherit' }}>Remove</button>}
+    </div>
+  )
+}
+
 const SIZES   = ['XS','S','M','L','XL','XXL','28','30','32','34','36','38','40','42','One Size']
 const GENDERS = ['Men','Women','Unisex','Kids']
 const SEASONS = ['All Season','Summer','Winter','Spring/Autumn']
 
 function emptyVariant(i) {
-  return { id: i, size: 'M', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '' }
+  return { id: i, size: 'M', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '', image: '' }
 }
 
 export default function AddProductPage() {
@@ -238,6 +265,7 @@ export default function AddProductPage() {
                       <input className="input" value={v.skuCode} onChange={e => setVariantField(i, 'skuCode', e.target.value)} placeholder={autoSku(v, i)} />
                     </div>
                   </div>
+                  <VariantImageUpload image={v.image || ''} onChange={url => setVariantField(i, 'image', url)} />
                 </div>
               ))}
             </div>
