@@ -2,14 +2,60 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata = {
-  title: 'Diffuse Egypt — Wear the Difference',
-  description: 'Premium basics and timeless clothing in Egypt. Shop quality essentials delivered across Cairo, Alexandria and all of Egypt.',
-  keywords: 'clothing Egypt, fashion Cairo, basics Egypt, premium clothing Cairo, Diffuse Egypt',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL('https://diffuse-egypt3.vercel.app'),
+  title: {
+    default: 'Diffuse Egypt — Wear the Difference',
+    template: '%s | Diffuse Egypt',
+  },
+  description: 'Premium basics and timeless clothing in Egypt. Shop quality essentials delivered across Cairo, Alexandria and all of Egypt. Free delivery on orders over EGP 500.',
+  keywords: [
+    'clothing Egypt',
+    'fashion Cairo',
+    'basics Egypt',
+    'premium clothing Cairo',
+    'Diffuse Egypt',
+    'online shopping Egypt',
+    'clothes delivery Cairo',
+    'Egyptian fashion',
+    'mens clothing Egypt',
+    'womens clothing Egypt',
+    'ملابس مصر',
+    'موضة القاهرة',
+    'تسوق ملابس مصر',
+  ],
+  authors: [{ name: 'Diffuse Egypt' }],
+  creator: 'Diffuse Egypt',
+  publisher: 'Diffuse Egypt',
+  formatDetection: { email: false, address: false, telephone: false },
   openGraph: {
-    title: 'Diffuse Egypt — Wear the Difference',
-    description: 'Premium basics delivered across Egypt. Free delivery on orders over EGP 500.',
     type: 'website',
+    locale: 'en_EG',
+    url: 'https://diffuse-egypt3.vercel.app',
+    siteName: 'Diffuse Egypt',
+    title: 'Diffuse Egypt — Wear the Difference',
+    description: 'Premium basics and timeless clothing delivered across Egypt.',
+    images: [{ url: '/og-image.svg', width: 1200, height: 630, alt: 'Diffuse Egypt — Premium Clothing' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Diffuse Egypt — Wear the Difference',
+    description: 'Premium basics and timeless clothing delivered across Egypt.',
+    images: ['/og-image.svg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: 'https://diffuse-egypt3.vercel.app',
+    languages: { 'en-EG': 'https://diffuse-egypt3.vercel.app' },
   },
 }
 

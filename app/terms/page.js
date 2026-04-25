@@ -1,7 +1,9 @@
 import Navbar from '../../components/Navbar.js'
 
 export const metadata = {
-  title: 'Terms of Service — Diffuse Egypt',
+  title: 'Terms and Conditions — Diffuse Egypt',
+  description: 'Read the terms and conditions for shopping at Diffuse Egypt.',
+  alternates: { canonical: 'https://diffuse-egypt3.vercel.app/terms' },
 }
 
 export default function TermsPage() {

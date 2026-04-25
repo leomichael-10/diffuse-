@@ -659,6 +659,35 @@ export default function ProductPage() {
           .product-detail-layout > div:last-child  { position: relative !important; top: 0 !important; max-height: none !important; }
         }
       `}</style>
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type':    'Product',
+        name:        product.name,
+        description: product.description || '',
+        brand:       { '@type': 'Brand', name: product.brand || 'Diffuse' },
+        image:       product.images?.[0]?.url || product.variants?.[0]?.image || undefined,
+        offers:      variants.map(v => ({
+          '@type':       'Offer',
+          price:         Number(v.priceAed),
+          priceCurrency: 'EGP',
+          availability:  v.stockQty > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          seller:        { '@type': 'Organization', name: 'Diffuse Egypt' },
+        })),
+        ...(avgRating && product.reviews?.length ? {
+          aggregateRating: { '@type': 'AggregateRating', ratingValue: avgRating, reviewCount: product.reviews.length },
+        } : {}),
+      })}} />
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        '@context':      'https://schema.org',
+        '@type':         'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home',     item: 'https://diffuse-egypt3.vercel.app' },
+          { '@type': 'ListItem', position: 2, name: 'Products', item: 'https://diffuse-egypt3.vercel.app/products' },
+          { '@type': 'ListItem', position: 3, name: product.name, item: `https://diffuse-egypt3.vercel.app/products/${product.id}` },
+        ],
+      })}} />
     </>
   )
 }

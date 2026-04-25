@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#FFFFFF"/>
+  <rect x="0" y="0" width="1200" height="6" fill="#C9A96E"/>
+  <rect x="0" y="624" width="1200" height="6" fill="#C9A96E"/>
+  <text x="600" y="260" font-family="Georgia, serif" font-size="96" font-weight="400" letter-spacing="24" fill="#111111" text-anchor="middle">DIFFUSE</text>
+  <text x="600" y="340" font-family="Georgia, serif" font-size="48" font-weight="400" letter-spacing="12" fill="#C9A96E" text-anchor="middle">EGYPT</text>
+  <text x="600" y="420" font-family="Georgia, serif" font-size="28" font-weight="300" letter-spacing="6" fill="#888888" text-anchor="middle">Wear the Difference</text>
+  <text x="600" y="570" font-family="Arial, sans-serif" font-size="18" letter-spacing="2" fill="#AAAAAA" text-anchor="middle">diffuse-egypt3.vercel.app</text>
+</svg>

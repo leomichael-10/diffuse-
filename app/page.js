@@ -446,6 +446,28 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type':    'Organization',
+        name:       'Diffuse Egypt',
+        url:        'https://diffuse-egypt3.vercel.app',
+        logo:       'https://diffuse-egypt3.vercel.app/og-image.svg',
+        contactPoint: { '@type': 'ContactPoint', email: 'hello@diffuse.eg', contactType: 'customer service', availableLanguage: ['English', 'Arabic'] },
+        address:    { '@type': 'PostalAddress', addressLocality: 'Cairo', addressCountry: 'EG' },
+      })}} />
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        '@context':      'https://schema.org',
+        '@type':         'WebSite',
+        name:            'Diffuse Egypt',
+        url:             'https://diffuse-egypt3.vercel.app',
+        potentialAction: {
+          '@type':     'SearchAction',
+          target:      { '@type': 'EntryPoint', urlTemplate: 'https://diffuse-egypt3.vercel.app/products?search={search_term_string}' },
+          'query-input': 'required name=search_term_string',
+        },
+      })}} />
     </>
   )
 }

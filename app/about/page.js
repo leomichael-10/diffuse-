@@ -2,8 +2,14 @@ import Link from 'next/link'
 import Navbar from '../../components/Navbar.js'
 
 export const metadata = {
-  title: 'About — Diffuse Egypt',
-  description: 'Diffuse was founded in Cairo with one belief: great basics should not compromise on quality or style.',
+  title: 'About Us — Diffuse Egypt',
+  description: 'Diffuse was founded in Cairo with one belief: great basics should not compromise on quality or style. Learn our story.',
+  openGraph: {
+    title:       'About Us — Diffuse Egypt',
+    description: 'Our story, our values, and why we believe in quality basics.',
+    url:         'https://diffuse-egypt3.vercel.app/about',
+  },
+  alternates: { canonical: 'https://diffuse-egypt3.vercel.app/about' },
 }
 
 export default function AboutPage() {

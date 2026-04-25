@@ -1,6 +1,10 @@
 import Navbar from '../../components/Navbar.js'
 
-export const metadata = { title: 'Privacy Policy — Diffuse Egypt' }
+export const metadata = {
+  title: 'Privacy Policy — Diffuse Egypt',
+  description: 'Read how Diffuse Egypt collects and uses your personal information.',
+  alternates: { canonical: 'https://diffuse-egypt3.vercel.app/privacy' },
+}
 
 export default function PrivacyPage() {
   return (

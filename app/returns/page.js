@@ -1,8 +1,9 @@
 import Navbar from '../../components/Navbar.js'
 
 export const metadata = {
-  title: 'Returns & Exchanges — Diffuse Egypt',
-  description: '14-day return policy. Easy returns and exchanges across Egypt.',
+  title: 'Returns Policy — Diffuse Egypt',
+  description: '14-day return policy. Free returns on all orders. Learn how to return items at Diffuse Egypt.',
+  alternates: { canonical: 'https://diffuse-egypt3.vercel.app/returns' },
 }
 
 export default function ReturnsPage() {
