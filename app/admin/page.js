@@ -750,7 +750,7 @@ function ProductForm({ product, categories, onClose, onSaved }) {
                   { key: 'color',    label: 'Color',    placeholder: 'White' },
                   { key: 'material', label: 'Material', placeholder: '100% Cotton' },
                   { key: 'skuCode',  label: 'SKU',      placeholder: 'DIF-001-M-WHT' },
-                  { key: 'priceAed', label: 'Price AED', placeholder: '149', type: 'number' },
+                  { key: 'priceAed', label: 'Price (EGP)', placeholder: '149', type: 'number' },
                   { key: 'stockQty', label: 'Stock',    placeholder: '50', type: 'number' },
                 ].map(f => (
                   <div key={f.key}>

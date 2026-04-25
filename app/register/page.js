@@ -39,8 +39,8 @@ export default function RegisterPage() {
     { key: 'name',     label: 'Full Name',          type: 'text',     placeholder: 'Jane Smith',        required: true },
     { key: 'email',    label: 'Email',               type: 'email',    placeholder: 'your@email.com',    required: true },
     { key: 'password', label: 'Password',            type: 'password', placeholder: 'Min. 6 characters', required: true },
-    { key: 'phone',    label: 'Phone (optional)',    type: 'tel',      placeholder: '+971 50 000 0000',  required: false },
-    { key: 'city',     label: 'City (optional)',     type: 'text',     placeholder: 'Dubai',             required: false },
+    { key: 'phone',    label: 'Phone (optional)',    type: 'tel',      placeholder: '+20 10 0000 0000',  required: false },
+    { key: 'city',     label: 'City (optional)',     type: 'text',     placeholder: 'Cairo',             required: false },
   ]
 
   return (

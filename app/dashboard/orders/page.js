@@ -61,7 +61,7 @@ export default function SellerOrdersPage() {
                   </div>
                   <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <span className={`badge ${STATUS_COLORS[order.status] || 'badge-gray'}`}>{order.status}</span>
-                    <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>AED {Number(order.totalAed).toFixed(0)}</span>
+                    <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>EGP {Number(order.totalAed).toLocaleString('en-EG')}</span>
                   </div>
                 </div>
 
@@ -72,7 +72,7 @@ export default function SellerOrdersPage() {
                       {item.variant.size  && <span>· {item.variant.size}</span>}
                       {item.variant.color && <span>· {item.variant.color}</span>}
                       <span>× {item.quantity}</span>
-                      <span style={{ marginLeft: 'auto', fontWeight: 600 }}>AED {Number(item.priceAed).toFixed(0)}</span>
+                      <span style={{ marginLeft: 'auto', fontWeight: 600 }}>EGP {Number(item.priceAed).toLocaleString('en-EG')}</span>
                     </div>
                   ))}
                 </div>

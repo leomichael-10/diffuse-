@@ -52,7 +52,7 @@ export default function SellerDashboard() {
             { label: 'Active Products', value: stats.productCount, color: '#3B82F6' },
             { label: 'Total Orders', value: stats.orderCount, color: '#10B981' },
             { label: 'Pending Orders', value: stats.pendingOrders, color: '#F59E0B' },
-            { label: 'Revenue (AED)', value: stats.totalRevenue.toFixed(0), color: '#0F172A' },
+            { label: 'Revenue (EGP)', value: stats.totalRevenue.toLocaleString('en-EG'), color: '#0F172A' },
           ].map(s => (
             <div key={s.label} className="card" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', fontWeight: 700, color: s.color, marginBottom: '0.25rem' }}>{s.value}</div>

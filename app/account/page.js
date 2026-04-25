@@ -134,11 +134,11 @@ export default function AccountPage() {
                       </div>
                       <div>
                         <label className="label">Phone</label>
-                        <input className="input-line" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+971 50 000 0000" />
+                        <input className="input-line" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+20 10 0000 0000" />
                       </div>
                       <div>
-                        <label className="label">City / Emirate</label>
-                        <input className="input-line" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="Dubai" />
+                        <label className="label">City</label>
+                        <input className="input-line" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="Cairo" />
                       </div>
                     </div>
                   </div>

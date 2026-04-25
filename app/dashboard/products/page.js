@@ -90,7 +90,7 @@ export default function SellerProductsPage() {
                       </td>
                       <td style={{ fontSize: '0.875rem', color: '#64748B' }}>{p.category?.name || '—'}</td>
                       <td style={{ fontSize: '0.875rem', color: '#64748B' }}>{p.variants?.length || 0}</td>
-                      <td style={{ fontWeight: 600 }}>AED {minPrice.toFixed(0)}</td>
+                      <td style={{ fontWeight: 600 }}>EGP {minPrice.toLocaleString('en-EG')}</td>
                       <td>
                         <button onClick={() => toggleActive(p.id, p.isActive)} className={`badge ${p.isActive ? 'badge-green' : 'badge-red'}`} style={{ cursor: 'pointer', border: 'none' }}>
                           {p.isActive ? 'Active' : 'Inactive'}

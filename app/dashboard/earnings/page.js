@@ -30,7 +30,7 @@ export default function EarningsPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
           {[
-            { label: 'Total Revenue', value: `AED ${Number(stats.totalRevenue || 0).toFixed(0)}`, desc: 'Completed orders' },
+            { label: 'Total Revenue', value: `EGP ${Number(stats.totalRevenue || 0).toLocaleString('en-EG')}`, desc: 'Completed orders' },
             { label: 'Total Orders', value: stats.orderCount || 0, desc: 'All time' },
             { label: 'Pending Orders', value: stats.pendingOrders || 0, desc: 'Awaiting confirmation' },
             { label: 'Active Products', value: stats.productCount || 0, desc: 'Listed items' },
@@ -46,7 +46,7 @@ export default function EarningsPage() {
         <div className="card">
           <h2 style={{ fontWeight: 600, marginBottom: '1rem', fontSize: '1rem' }}>Subscription</h2>
           <div className="alert alert-info" style={{ fontSize: '0.875rem' }}>
-            Your subscription is AED 199/month. Contact support at micheal.fadi@gmail.com for billing inquiries.
+            Your subscription is EGP 199/month. Contact support at micheal.fadi@gmail.com for billing inquiries.
           </div>
         </div>
       </main>
