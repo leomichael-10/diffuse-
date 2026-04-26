@@ -78,6 +78,7 @@ export async function POST(request) {
             priceAed: Number(v.priceAed),
             stockQty: Number(v.stockQty) || 0,
             skuCode:  v.skuCode || null,
+            image:    v.image    || null,
           })),
         },
         images: imageUrls?.length ? {
