@@ -30,8 +30,10 @@ export default function ProductCard({ product }) {
     : (product.avgRating || 0)
   const ratingCount = product.reviewCount || reviews.length
 
-  const img1 = images[0]?.url
-  const img2 = images[1]?.url
+  // Prefer product-level images; fall back to variant images
+  const variantImages = variants.map(v => v.image).filter(Boolean)
+  const img1 = images[0]?.url || variantImages[0] || null
+  const img2 = images[1]?.url || variantImages[1] || null
 
   function addToCart(size) {
     const variant = variants.find(v => v.size === size && v.stockQty > 0) ||
@@ -52,7 +54,7 @@ export default function ProductCard({ product }) {
       price:     Number(variant.priceAed),
       qty:       1,
       quantity:  1,
-      image:     img1 || null,
+      image:     variant.image || img1 || null,
     }
     if (idx >= 0) { cart[idx].qty = (cart[idx].qty || 0) + 1; cart[idx].quantity = cart[idx].qty }
     else cart.push(item)

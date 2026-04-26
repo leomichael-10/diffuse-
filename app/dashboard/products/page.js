@@ -74,8 +74,8 @@ export default function SellerProductsPage() {
                     <tr key={p.id}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          {p.images?.[0]?.url ? (
-                            <img src={p.images[0].url} alt="" style={{ width: '44px', height: '55px', objectFit: 'cover', borderRadius: '6px' }} />
+                          {(p.images?.[0]?.url || p.variants?.find(v => v.image)?.image) ? (
+                            <img src={p.images?.[0]?.url || p.variants?.find(v => v.image)?.image} alt="" style={{ width: '44px', height: '55px', objectFit: 'cover', borderRadius: '6px' }} />
                           ) : (
                             <div style={{ width: '44px', height: '55px', borderRadius: '6px', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>
                               {p.name.slice(0,2).toUpperCase()}

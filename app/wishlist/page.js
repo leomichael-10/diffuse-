@@ -96,7 +96,7 @@ export default function WishlistPage() {
               {items.map(item => {
                 const product = item.product
                 const variant = product?.variants?.[0]
-                const img     = product?.images?.[0]?.url
+                const img     = product?.images?.[0]?.url || product?.variants?.find(v => v.image)?.image || null
                 return (
                   <div key={item.id} style={{ padding: '0.5rem' }}>
                     <div style={{ position: 'relative' }}>
