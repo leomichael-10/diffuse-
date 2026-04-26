@@ -186,7 +186,7 @@ export default function CartPage() {
   }
 
   /* ── Order summary panel (shared between cart + checkout) ── */
-  const SummaryPanel = ({ isCheckout }) => (
+  const renderSummary = (isCheckout) => (
     <div style={{ border: '1px solid var(--gray-200)', padding: '1.5rem' }}>
       <p className="t-label" style={{ marginBottom: '1.25rem' }}>Order Summary</p>
 
@@ -429,13 +429,13 @@ export default function CartPage() {
 
               {/* Mobile-only summary (below items/form on small screens) */}
               <div className="cart-summary-mobile" style={{ marginTop: '2rem' }}>
-                <SummaryPanel isCheckout={step === 'checkout'} />
+                {renderSummary(step === 'checkout')}
               </div>
             </div>
 
             {/* ── RIGHT column — desktop sticky summary ── */}
             <div className="cart-summary-desktop" style={{ position: 'sticky', top: 'calc(var(--nav-height) + 1.5rem)', alignSelf: 'start' }}>
-              <SummaryPanel isCheckout={step === 'checkout'} />
+              {renderSummary(step === 'checkout')}
             </div>
 
           </div>
