@@ -30,7 +30,8 @@ export default function ProductPage() {
 
   const [product,     setProduct]     = useState(null)
   const [related,     setRelated]     = useState([])
-  const [bundles,     setBundles]     = useState([])
+  const [bundles,          setBundles]          = useState([])
+  const [bundleSelections, setBundleSelections] = useState({})
   const [loading,     setLoading]     = useState(true)
   const [notFound,    setNotFound]    = useState(false)
 
@@ -75,9 +76,23 @@ export default function ProductPage() {
           .then(all => {
             const pid = Number(d.id)
             const matching = (Array.isArray(all) ? all : []).filter(b =>
-              b.items?.some(item => item.variant?.product?.id === pid || Number(item.variant?.product?.id) === pid)
+              b.items?.some(item => Number(item.variant?.product?.id) === pid)
             )
             setBundles(matching)
+            // Initialise selections: first available color+size per item
+            const init = {}
+            matching.forEach(b => {
+              init[b.id] = {}
+              b.items?.forEach(item => {
+                const pvariants = item.variant?.product?.variants || []
+                const firstV = pvariants.find(v => v.stockQty > 0) || pvariants[0]
+                init[b.id][item.id] = {
+                  color: firstV?.color || null,
+                  size:  firstV?.size  || null,
+                }
+              })
+            })
+            setBundleSelections(init)
           })
           .catch(() => {})
       })
@@ -216,11 +231,17 @@ export default function ProductPage() {
   }
 
   function addBundleToCart(bundle) {
+    const sel  = bundleSelections[bundle.id] || {}
     const cart = JSON.parse(localStorage.getItem('diffuse_cart') || '[]')
     bundle.items?.forEach(item => {
-      const v   = item.variant
-      const p   = v?.product
-      if (!v || !p) return
+      const p        = item.variant?.product
+      if (!p) return
+      const { color, size } = sel[item.id] || {}
+      const pvariants = p.variants || []
+      const v = pvariants.find(v => v.color === color && v.size === size)
+            || pvariants.find(v => v.color === color)
+            || pvariants[0]
+      if (!v) return
       const img = p.images?.[0]?.url || v.image || null
       const idx = cart.findIndex(c => c.variantId === v.id)
       if (idx >= 0) {
@@ -244,7 +265,7 @@ export default function ProductPage() {
     })
     localStorage.setItem('diffuse_cart', JSON.stringify(cart))
     window.dispatchEvent(new Event('cart-updated'))
-    setAddMsg(`Bundle added to Bag`)
+    setAddMsg('Bundle added to Bag')
     setTimeout(() => setAddMsg(''), 2400)
   }
 
@@ -622,27 +643,120 @@ export default function ProductPage() {
               <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.1rem,2.5vw,1.6rem)', fontWeight: 300, letterSpacing: '0.03em', marginBottom: '2rem' }}>
                 Available as a Bundle
               </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {bundles.map(bundle => {
-                  const otherItems = bundle.items?.filter(item => Number(item.variant?.product?.id) !== Number(id)) || []
-                  const bundleTotal = bundle.items?.reduce((s, item) => s + Number(item.variant?.priceAed || 0), 0) || 0
+                  const bSel      = bundleSelections[bundle.id] || {}
+                  const bundleTotal = bundle.items?.reduce((s, item) => {
+                    const { color, size } = bSel[item.id] || {}
+                    const pvariants = item.variant?.product?.variants || []
+                    const chosen = pvariants.find(v => v.color === color && v.size === size)
+                               || pvariants.find(v => v.color === color)
+                               || pvariants[0]
+                    return s + Number(chosen?.priceAed || 0)
+                  }, 0)
+
+                  function setItemSel(itemId, field, value) {
+                    setBundleSelections(prev => ({
+                      ...prev,
+                      [bundle.id]: {
+                        ...prev[bundle.id],
+                        [itemId]: { ...(prev[bundle.id]?.[itemId] || {}), [field]: value },
+                      },
+                    }))
+                  }
+
                   return (
-                    <div key={bundle.id} style={{ border: '1px solid var(--gray-200)', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-                      {/* Products in bundle */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '200px', flexWrap: 'wrap' }}>
+                    <div key={bundle.id} style={{ border: '1px solid var(--gray-200)', padding: '1.5rem' }}>
+                      <p style={{ fontSize: '0.62rem', fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '1.25rem', color: 'var(--black)' }}>
+                        {bundle.name}
+                      </p>
+
+                      {/* Items */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
                         {bundle.items?.map((item, i) => {
-                          const p   = item.variant?.product
-                          const img = p?.images?.[0]?.url || item.variant?.image || null
+                          const p        = item.variant?.product
+                          const pvariants = p?.variants || []
+                          const itemSel  = bSel[item.id] || {}
+                          const img      = p?.images?.[0]?.url || item.variant?.image || null
+
+                          // Unique colors
+                          const colors = [...new Map(pvariants.filter(v => v.color).map(v => [v.color, { color: v.color, colorHex: v.colorHex }])).values()]
+                          // Sizes for selected color
+                          const sizes  = [...new Set(
+                            (itemSel.color ? pvariants.filter(v => v.color === itemSel.color) : pvariants)
+                              .map(v => v.size).filter(Boolean)
+                          )]
+                          // Selected variant for price display
+                          const chosenV = pvariants.find(v => v.color === itemSel.color && v.size === itemSel.size)
+                                       || pvariants.find(v => v.color === itemSel.color)
+                                       || pvariants[0]
+
                           return (
-                            <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              {i > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)' }}>+</span>}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <div style={{ width: '48px', height: '60px', background: 'var(--gray-100)', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-                                  {img && <Image src={img} alt={p?.name || ''} fill style={{ objectFit: 'cover' }} sizes="48px" />}
+                            <div key={item.id}>
+                              {i > 0 && <div style={{ height: '1px', background: 'var(--gray-100)', marginBottom: '1.25rem' }} />}
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                {/* Thumbnail */}
+                                <div style={{ width: '56px', height: '70px', background: 'var(--gray-100)', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                                  {img && <Image src={img} alt={p?.name || ''} fill style={{ objectFit: 'cover' }} sizes="56px" />}
                                 </div>
-                                <div>
-                                  <p style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--black)', lineHeight: 1.3 }}>{p?.name}</p>
-                                  <p style={{ fontSize: '0.65rem', color: 'var(--gray-500)' }}>{formatPrice(Number(item.variant?.priceAed || 0))}</p>
+
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p style={{ fontSize: '0.78rem', fontWeight: 500, marginBottom: '0.2rem' }}>{p?.name}</p>
+                                  <p style={{ fontSize: '0.68rem', color: 'var(--sand)', marginBottom: '0.75rem' }}>{formatPrice(Number(chosenV?.priceAed || 0))}</p>
+
+                                  {/* Color swatches */}
+                                  {colors.length > 0 && (
+                                    <div style={{ marginBottom: '0.5rem' }}>
+                                      <p style={{ fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.4rem' }}>
+                                        Color: <span style={{ color: 'var(--black)' }}>{itemSel.color || '—'}</span>
+                                      </p>
+                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                        {colors.map(c => (
+                                          <button key={c.color} type="button"
+                                            onClick={() => setItemSel(item.id, 'color', c.color)}
+                                            title={c.color}
+                                            style={{
+                                              width: '20px', height: '20px', borderRadius: '50%',
+                                              background: c.colorHex || '#ccc',
+                                              border: itemSel.color === c.color ? '2px solid var(--black)' : '1px solid var(--gray-300)',
+                                              cursor: 'pointer', padding: 0, outline: 'none',
+                                              boxSizing: 'border-box',
+                                            }} />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Size buttons */}
+                                  {sizes.length > 0 && (
+                                    <div>
+                                      <p style={{ fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.4rem' }}>
+                                        Size: <span style={{ color: 'var(--black)' }}>{itemSel.size || '—'}</span>
+                                      </p>
+                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                        {sizes.map(sz => {
+                                          const v   = pvariants.find(v => v.color === itemSel.color && v.size === sz)
+                                          const oos = v ? v.stockQty === 0 : false
+                                          return (
+                                            <button key={sz} type="button"
+                                              onClick={() => !oos && setItemSel(item.id, 'size', sz)}
+                                              style={{
+                                                minWidth: '32px', height: '32px', padding: '0 6px',
+                                                border: itemSel.size === sz ? '1px solid var(--black)' : '1px solid var(--gray-300)',
+                                                background: itemSel.size === sz ? 'var(--black)' : 'var(--white)',
+                                                color: itemSel.size === sz ? 'var(--white)' : oos ? 'var(--gray-400)' : 'var(--black)',
+                                                cursor: oos ? 'default' : 'pointer',
+                                                fontSize: '0.62rem', letterSpacing: '0.04em',
+                                                textDecoration: oos ? 'line-through' : 'none',
+                                                fontFamily: 'inherit',
+                                              }}>
+                                              {sz}
+                                            </button>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -651,9 +765,9 @@ export default function ProductPage() {
                       </div>
 
                       {/* Price + CTA */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem', flexShrink: 0 }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <p style={{ fontSize: '0.6rem', color: 'var(--gray-400)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.15rem' }}>Bundle Price</p>
+                      <div style={{ borderTop: '1px solid var(--gray-100)', paddingTop: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div>
+                          <p style={{ fontSize: '0.58rem', color: 'var(--gray-400)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Bundle Price</p>
                           <p style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 300 }}>{formatPrice(Number(bundle.priceAed))}</p>
                           {Number(bundle.priceAed) < bundleTotal && (
                             <p style={{ fontSize: '0.62rem', color: 'var(--sand)', letterSpacing: '0.04em' }}>
@@ -664,7 +778,7 @@ export default function ProductPage() {
                         <button
                           onClick={() => addBundleToCart(bundle)}
                           className="btn btn-black btn-sm"
-                          style={{ fontSize: '0.58rem', letterSpacing: '0.16em', padding: '0.65rem 1.25rem' }}>
+                          style={{ fontSize: '0.58rem', letterSpacing: '0.16em', padding: '0.75rem 1.5rem' }}>
                           Add Bundle to Bag
                         </button>
                       </div>

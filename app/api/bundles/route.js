@@ -10,7 +10,12 @@ export async function GET() {
           include: {
             variant: {
               include: {
-                product: { include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } } },
+                product: {
+                    include: {
+                      images:   { orderBy: { sortOrder: 'asc' }, take: 1 },
+                      variants: { orderBy: { priceAed: 'asc' } },
+                    },
+                  },
               },
             },
           },
