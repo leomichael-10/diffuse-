@@ -47,49 +47,66 @@ export async function PUT(request, { params }) {
   const role = request.headers.get('x-user-role')
   if (role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const body = await request.json()
-  const { name, brand, description, categoryId, gender, season, isActive, isFeatured, variants, imageUrls } = body
+  try {
+    const body = await request.json()
+    const { name, brand, description, categoryId, gender, season, isActive, isFeatured, variants, imageUrls } = body
 
-  const product = await prisma.product.findUnique({ where: { id } })
-  if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: { variants: { select: { id: true } } },
+    })
+    if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
 
-  const updated = await prisma.product.update({
-    where: { id },
-    data: {
-      name:        name?.trim()        ?? product.name,
-      brand:       brand?.trim()       ?? product.brand,
-      description: description?.trim() ?? product.description,
-      categoryId:  categoryId !== undefined ? (categoryId ? Number(categoryId) : null) : product.categoryId,
-      gender:      gender    !== undefined ? gender    : product.gender,
-      season:      season    !== undefined ? season    : product.season,
-      isActive:    isActive  !== undefined ? isActive  : product.isActive,
-      isFeatured:  isFeatured !== undefined ? isFeatured : product.isFeatured,
-      ...(variants && {
-        variants: {
-          deleteMany: {},
-          create: variants.map(v => ({
-            size:     v.size     || null,
-            color:    v.color    || null,
-            colorHex: v.colorHex || null,
-            material: v.material || null,
-            priceAed: Number(v.priceAed),
-            stockQty: Number(v.stockQty) || 0,
-            skuCode:  v.skuCode || null,
-            image:    v.image    || null,
-          })),
-        },
-      }),
-      ...(imageUrls && {
-        images: {
-          deleteMany: {},
-          create: imageUrls.map((url, i) => ({ url, sortOrder: i })),
-        },
-      }),
-    },
-    include: { variants: true, images: true, category: true },
-  })
+    // Clear dependent records before replacing variants
+    if (variants) {
+      const existingIds = product.variants.map(v => v.id)
+      if (existingIds.length) {
+        await prisma.stockMovement.deleteMany({ where: { variantId: { in: existingIds } } })
+        await prisma.bundleItem.deleteMany({ where: { variantId: { in: existingIds } } })
+      }
+    }
 
-  return NextResponse.json(updated)
+    const updated = await prisma.product.update({
+      where: { id },
+      data: {
+        name:        name?.trim()        ?? product.name,
+        brand:       brand?.trim()       ?? product.brand,
+        description: description?.trim() ?? product.description,
+        categoryId:  categoryId !== undefined ? (categoryId ? Number(categoryId) : null) : product.categoryId,
+        gender:      gender    !== undefined ? gender    : product.gender,
+        season:      season    !== undefined ? season    : product.season,
+        isActive:    isActive  !== undefined ? isActive  : product.isActive,
+        isFeatured:  isFeatured !== undefined ? isFeatured : product.isFeatured,
+        ...(variants && {
+          variants: {
+            deleteMany: {},
+            create: variants.map(v => ({
+              size:     v.size     || null,
+              color:    v.color    || null,
+              colorHex: v.colorHex || null,
+              material: v.material || null,
+              priceAed: Number(v.priceAed),
+              stockQty: Number(v.stockQty) || 0,
+              skuCode:  v.skuCode || null,
+              image:    v.image    || null,
+            })),
+          },
+        }),
+        ...(imageUrls && {
+          images: {
+            deleteMany: {},
+            create: imageUrls.map((url, i) => ({ url, sortOrder: i })),
+          },
+        }),
+      },
+      include: { variants: true, images: true, category: true },
+    })
+
+    return NextResponse.json(JSON.parse(JSON.stringify(updated)))
+  } catch (error) {
+    console.error('PUT /api/products/[id] error:', error.message)
+    return NextResponse.json({ error: 'Save failed: ' + error.message }, { status: 500 })
+  }
 }
 
 export async function DELETE(request, { params }) {
