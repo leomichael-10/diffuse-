@@ -24,7 +24,8 @@ export default function AdminPage() {
   const [stats,     setStats]     = useState(null)
   const [bundles,   setBundles]   = useState([])
   const [promos,    setPromos]    = useState([])
-  const [newBundle, setNewBundle] = useState({ name: '', description: '', priceAed: '', product1Id: '', variant1Id: '', product2Id: '', variant2Id: '' })
+  const [newBundle, setNewBundle] = useState({ name: '', description: '', priceAed: '' })
+  const [bundleProductIds, setBundleProductIds] = useState(['', ''])
   const [newPromo,  setNewPromo]  = useState({ code: '', discountType: 'percent', discountValue: '', minOrderAed: '', maxUses: '', expiresAt: '' })
 
   useEffect(() => {
@@ -462,7 +463,7 @@ export default function AdminPage() {
                   {/* Create bundle */}
                   <div style={{ background: 'var(--white)', border: '1px solid var(--gray-mid)', padding: '1.5rem' }}>
                     <p style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 500, marginBottom: '1.25rem' }}>Create Bundle</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
                       <input className="input-line" placeholder="Bundle name" value={newBundle.name}
                         onChange={e => setNewBundle(b => ({ ...b, name: e.target.value }))} />
                       <input className="input-line" placeholder="Bundle price (EGP)" type="number" value={newBundle.priceAed}
@@ -471,58 +472,49 @@ export default function AdminPage() {
                         onChange={e => setNewBundle(b => ({ ...b, description: e.target.value }))} />
                     </div>
 
-                    {/* Product 1 */}
-                    <div style={{ marginBottom: '0.875rem' }}>
-                      <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.4rem' }}>Product 1</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                        <select className="input-line" value={newBundle.product1Id}
-                          onChange={e => setNewBundle(b => ({ ...b, product1Id: e.target.value, variant1Id: '' }))}>
-                          <option value="">— Select product —</option>
-                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
-                        <select className="input-line" value={newBundle.variant1Id}
-                          onChange={e => setNewBundle(b => ({ ...b, variant1Id: e.target.value }))}
-                          disabled={!newBundle.product1Id}>
-                          <option value="">— Select variant —</option>
-                          {(products.find(p => String(p.id) === String(newBundle.product1Id))?.variants || []).map(v => (
-                            <option key={v.id} value={v.id}>{[v.color, v.size].filter(Boolean).join(' / ')} — EGP {Number(v.priceAed).toLocaleString('en-EG')}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Product 2 */}
-                    <div style={{ marginBottom: '1.25rem' }}>
-                      <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.4rem' }}>Product 2</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                        <select className="input-line" value={newBundle.product2Id}
-                          onChange={e => setNewBundle(b => ({ ...b, product2Id: e.target.value, variant2Id: '' }))}>
-                          <option value="">— Select product —</option>
-                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
-                        <select className="input-line" value={newBundle.variant2Id}
-                          onChange={e => setNewBundle(b => ({ ...b, variant2Id: e.target.value }))}
-                          disabled={!newBundle.product2Id}>
-                          <option value="">— Select variant —</option>
-                          {(products.find(p => String(p.id) === String(newBundle.product2Id))?.variants || []).map(v => (
-                            <option key={v.id} value={v.id}>{[v.color, v.size].filter(Boolean).join(' / ')} — EGP {Number(v.priceAed).toLocaleString('en-EG')}</option>
-                          ))}
-                        </select>
-                      </div>
+                    {/* Dynamic product list */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.625rem' }}>Products in bundle</div>
+                      {bundleProductIds.map((pid, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--gray-text)', minWidth: '16px' }}>{idx + 1}.</span>
+                          <select className="input-line" value={pid} style={{ flex: 1 }}
+                            onChange={e => setBundleProductIds(prev => prev.map((v, i) => i === idx ? e.target.value : v))}>
+                            <option value="">— Select product —</option>
+                            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                          {bundleProductIds.length > 2 && (
+                            <button type="button"
+                              onClick={() => setBundleProductIds(prev => prev.filter((_, i) => i !== idx))}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: 'var(--gray-text)', lineHeight: 1, padding: '0 4px' }}>
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button type="button"
+                        onClick={() => setBundleProductIds(prev => [...prev, ''])}
+                        style={{ marginTop: '0.25rem', background: 'none', border: '1px dashed var(--gray-mid)', cursor: 'pointer', fontSize: '0.65rem', color: 'var(--gray-text)', fontFamily: 'inherit', padding: '5px 12px', letterSpacing: '0.08em' }}>
+                        + Add another product
+                      </button>
                     </div>
 
                     <button className="btn btn-black btn-sm" onClick={async () => {
                       if (!newBundle.name || !newBundle.priceAed) return alert('Name and price required')
-                      if (!newBundle.variant1Id || !newBundle.variant2Id) return alert('Select a variant for both products')
-                      const items = [
-                        { variantId: Number(newBundle.variant1Id), quantity: 1 },
-                        { variantId: Number(newBundle.variant2Id), quantity: 1 },
-                      ]
+                      const selected = bundleProductIds.filter(Boolean)
+                      if (selected.length < 2) return alert('Select at least 2 products')
+                      const items = selected.map(pid => {
+                        const p = products.find(x => String(x.id) === String(pid))
+                        const variantId = p?.variants?.[0]?.id
+                        return variantId ? { variantId, quantity: 1 } : null
+                      }).filter(Boolean)
+                      if (items.length < 2) return alert('Selected products have no variants')
                       const res = await fetch('/api/bundles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newBundle.name, description: newBundle.description, priceAed: newBundle.priceAed, items }) })
                       if (res.ok) {
                         const b = await res.json()
                         setBundles(prev => [b, ...prev])
-                        setNewBundle({ name: '', description: '', priceAed: '', product1Id: '', variant1Id: '', product2Id: '', variant2Id: '' })
+                        setNewBundle({ name: '', description: '', priceAed: '' })
+                        setBundleProductIds(['', ''])
                       } else alert('Failed to create bundle')
                     }}>Create Bundle</button>
                   </div>
