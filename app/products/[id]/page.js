@@ -30,6 +30,7 @@ export default function ProductPage() {
 
   const [product,     setProduct]     = useState(null)
   const [related,     setRelated]     = useState([])
+  const [bundles,     setBundles]     = useState([])
   const [loading,     setLoading]     = useState(true)
   const [notFound,    setNotFound]    = useState(false)
 
@@ -69,6 +70,16 @@ export default function ProductPage() {
             .then(rel => setRelated((Array.isArray(rel) ? rel : []).filter(p => p.id !== d.id).slice(0, 4)))
             .catch(() => {})
         }
+        fetch('/api/bundles')
+          .then(r => r.json())
+          .then(all => {
+            const pid = Number(d.id)
+            const matching = (Array.isArray(all) ? all : []).filter(b =>
+              b.items?.some(item => item.variant?.product?.id === pid || Number(item.variant?.product?.id) === pid)
+            )
+            setBundles(matching)
+          })
+          .catch(() => {})
       })
       .catch(() => { setNotFound(true); setLoading(false) })
   }, [id])
@@ -201,6 +212,39 @@ export default function ProductPage() {
     localStorage.setItem('diffuse_cart', JSON.stringify(cart))
     window.dispatchEvent(new Event('cart-updated'))
     setAddMsg('Added to Bag')
+    setTimeout(() => setAddMsg(''), 2400)
+  }
+
+  function addBundleToCart(bundle) {
+    const cart = JSON.parse(localStorage.getItem('diffuse_cart') || '[]')
+    bundle.items?.forEach(item => {
+      const v   = item.variant
+      const p   = v?.product
+      if (!v || !p) return
+      const img = p.images?.[0]?.url || v.image || null
+      const idx = cart.findIndex(c => c.variantId === v.id)
+      if (idx >= 0) {
+        cart[idx].qty = (cart[idx].qty || 0) + 1
+        cart[idx].quantity = cart[idx].qty
+      } else {
+        cart.push({
+          variantId: v.id,
+          productId: p.id,
+          name:      p.name,
+          brand:     p.brand || 'Diffuse',
+          size:      v.size,
+          color:     v.color,
+          colorHex:  v.colorHex,
+          price:     Number(v.priceAed),
+          qty:       1,
+          quantity:  1,
+          image:     img,
+        })
+      }
+    })
+    localStorage.setItem('diffuse_cart', JSON.stringify(cart))
+    window.dispatchEvent(new Event('cart-updated'))
+    setAddMsg(`Bundle added to Bag`)
     setTimeout(() => setAddMsg(''), 2400)
   }
 
@@ -570,6 +614,67 @@ export default function ProductPage() {
             ))}
           </div>
         </div>
+
+        {/* ── Bundles ── */}
+        {bundles.length > 0 && (
+          <div style={{ borderTop: '1px solid var(--gray-300)', padding: '4rem 0' }}>
+            <div className="section-md">
+              <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.1rem,2.5vw,1.6rem)', fontWeight: 300, letterSpacing: '0.03em', marginBottom: '2rem' }}>
+                Available as a Bundle
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {bundles.map(bundle => {
+                  const otherItems = bundle.items?.filter(item => Number(item.variant?.product?.id) !== Number(id)) || []
+                  const bundleTotal = bundle.items?.reduce((s, item) => s + Number(item.variant?.priceAed || 0), 0) || 0
+                  return (
+                    <div key={bundle.id} style={{ border: '1px solid var(--gray-200)', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                      {/* Products in bundle */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '200px', flexWrap: 'wrap' }}>
+                        {bundle.items?.map((item, i) => {
+                          const p   = item.variant?.product
+                          const img = p?.images?.[0]?.url || item.variant?.image || null
+                          return (
+                            <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              {i > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)' }}>+</span>}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ width: '48px', height: '60px', background: 'var(--gray-100)', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                                  {img && <Image src={img} alt={p?.name || ''} fill style={{ objectFit: 'cover' }} sizes="48px" />}
+                                </div>
+                                <div>
+                                  <p style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--black)', lineHeight: 1.3 }}>{p?.name}</p>
+                                  <p style={{ fontSize: '0.65rem', color: 'var(--gray-500)' }}>{formatPrice(Number(item.variant?.priceAed || 0))}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Price + CTA */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem', flexShrink: 0 }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ fontSize: '0.6rem', color: 'var(--gray-400)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.15rem' }}>Bundle Price</p>
+                          <p style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 300 }}>{formatPrice(Number(bundle.priceAed))}</p>
+                          {Number(bundle.priceAed) < bundleTotal && (
+                            <p style={{ fontSize: '0.62rem', color: 'var(--sand)', letterSpacing: '0.04em' }}>
+                              Save {formatPrice(bundleTotal - Number(bundle.priceAed))}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => addBundleToCart(bundle)}
+                          className="btn btn-black btn-sm"
+                          style={{ fontSize: '0.58rem', letterSpacing: '0.16em', padding: '0.65rem 1.25rem' }}>
+                          Add Bundle to Bag
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Reviews ── */}
         <div style={{ borderTop: '1px solid var(--gray-300)', padding: '6rem 0' }}>
