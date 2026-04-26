@@ -610,73 +610,127 @@ export default function AdminPage() {
 }
 
 /* ─── Inline Product Form ─── */
-function VariantImageUpload({ image, onChange }) {
-  const [uploading,    setUploading]    = useState(false)
-  const [localPreview, setLocalPreview] = useState(null)
-  const [uploadError,  setUploadError]  = useState('')
 
-  async function handleFile(e) {
-    const file = e.target.files?.[0]
+const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL', '28', '30', 'One Size']
+
+function makeEmptySizes() {
+  return Object.fromEntries(AVAILABLE_SIZES.map(s => [s, { enabled: false, price: '', stock: '', sku: '' }]))
+}
+
+function makeEmptyColor() {
+  return { id: Date.now() + Math.random(), name: '', hex: '#000000', image: '', imagePreview: '', uploading: false, sizes: makeEmptySizes() }
+}
+
+function variantsToColors(variants) {
+  if (!variants?.length) return [makeEmptyColor()]
+  const map = {}
+  const order = []
+  variants.forEach(v => {
+    const key = v.colorHex || v.color || '__none__'
+    if (!map[key]) {
+      map[key] = { id: Date.now() + Math.random(), name: v.color || '', hex: v.colorHex || '#000000', image: v.image || '', imagePreview: v.image || '', uploading: false, sizes: makeEmptySizes() }
+      order.push(key)
+    }
+    const size = v.size || ''
+    if (AVAILABLE_SIZES.includes(size)) {
+      map[key].sizes[size] = { enabled: true, price: String(v.priceAed ?? ''), stock: String(v.stockQty ?? ''), sku: v.skuCode || '' }
+    }
+  })
+  return order.map(k => map[k])
+}
+
+function ProductForm({ product, categories, onClose, onSaved }) {
+  const isNew = !product.id
+  const [form,   setForm]   = useState({ ...product })
+  const [colors, setColors] = useState(() => variantsToColors(product.variants))
+  const [images, setImages] = useState(
+    (product.images || []).map(img => typeof img === 'string' ? img : img.url).filter(Boolean)
+  )
+  const [saving, setSaving] = useState(false)
+  const [error,  setError]  = useState('')
+
+  function setField(k, v) { setForm(p => ({ ...p, [k]: v })) }
+
+  const addColor    = () => setColors(prev => [...prev, makeEmptyColor()])
+  const removeColor = (id) => setColors(prev => prev.filter(c => c.id !== id))
+  const updateColor = (id, field, value) => setColors(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c))
+
+  const toggleSize = (id, size, enabled) =>
+    setColors(prev => prev.map(c => c.id === id ? { ...c, sizes: { ...c.sizes, [size]: { ...c.sizes[size], enabled } } } : c))
+
+  const updateSizeData = (id, size, field, value) =>
+    setColors(prev => prev.map(c => c.id === id ? { ...c, sizes: { ...c.sizes, [size]: { ...c.sizes[size], [field]: value } } } : c))
+
+  const applyPriceToAll = (id) => {
+    const col = colors.find(c => c.id === id)
+    const first = Object.entries(col.sizes).find(([, s]) => s.enabled && s.price)
+    if (!first) return
+    const price = first[1].price
+    setColors(prev => prev.map(c => {
+      if (c.id !== id) return c
+      const sizes = { ...c.sizes }
+      Object.keys(sizes).forEach(sz => { if (sizes[sz].enabled) sizes[sz] = { ...sizes[sz], price } })
+      return { ...c, sizes }
+    }))
+  }
+
+  const applyStockToAll = (id) => {
+    const col = colors.find(c => c.id === id)
+    const first = Object.entries(col.sizes).find(([, s]) => s.enabled && s.stock)
+    if (!first) return
+    const stock = first[1].stock
+    setColors(prev => prev.map(c => {
+      if (c.id !== id) return c
+      const sizes = { ...c.sizes }
+      Object.keys(sizes).forEach(sz => { if (sizes[sz].enabled) sizes[sz] = { ...sizes[sz], stock } })
+      return { ...c, sizes }
+    }))
+  }
+
+  async function handleColorImageUpload(id, file) {
     if (!file) return
-    e.target.value = ''
     const preview = URL.createObjectURL(file)
-    setLocalPreview(preview)
-    setUploadError('')
-    setUploading(true)
+    updateColor(id, 'imagePreview', preview)
+    updateColor(id, 'uploading', true)
     try {
       const fd = new FormData()
       fd.append('files', file)
       const res  = await fetch('/api/upload', { method: 'POST', body: fd })
       const data = await res.json()
       if (data.urls?.[0]) {
-        onChange(data.urls[0])
-        setLocalPreview(null)
+        updateColor(id, 'image', data.urls[0])
+        updateColor(id, 'imagePreview', data.urls[0])
       } else {
-        throw new Error(data.error || 'Upload returned no URL')
+        throw new Error(data.error || 'Upload failed')
       }
     } catch (err) {
-      setLocalPreview(null)
-      setUploadError('Upload failed')
-      console.error('Variant image upload error:', err)
+      updateColor(id, 'imagePreview', '')
+      alert('Image upload failed: ' + err.message)
     } finally {
-      setUploading(false)
+      updateColor(id, 'uploading', false)
     }
   }
 
-  const displayImage = localPreview || image || null
-
-  return (
-    <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-      <label className="label" style={{ marginBottom: 0 }}>Variant Image</label>
-      {displayImage && (
-        <img src={displayImage} alt="" style={{ width: 40, height: 48, objectFit: 'cover', border: '1px solid var(--gray-mid)', opacity: uploading ? 0.5 : 1 }} />
-      )}
-      <label style={{ cursor: uploading ? 'default' : 'pointer', fontSize: '0.7rem', color: uploading ? 'var(--gray-400)' : 'var(--gray-text)', textDecoration: 'underline' }}>
-        {uploading ? 'Uploading…' : displayImage ? 'Change' : 'Upload'}
-        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} style={{ display: 'none' }} disabled={uploading} />
-      </label>
-      {!uploading && displayImage && (
-        <button type="button" onClick={() => { onChange(''); setLocalPreview(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#EF4444', fontFamily: 'inherit' }}>Remove</button>
-      )}
-      {uploadError && <span style={{ fontSize: '0.65rem', color: '#EF4444' }}>{uploadError}</span>}
-    </div>
-  )
-}
-
-function ProductForm({ product, categories, onClose, onSaved }) {
-  const isNew = !product.id
-  const [form,    setForm]    = useState({ ...product })
-  const [variants, setVariants] = useState(product.variants?.length ? product.variants : [{ size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '', image: '' }])
-  const [images,  setImages]  = useState(
-    (product.images || []).map(img => typeof img === 'string' ? img : img.url).filter(Boolean)
-  )
-  const [saving,  setSaving]  = useState(false)
-  const [error,   setError]   = useState('')
-
-  function setField(k, v) { setForm(p => ({ ...p, [k]: v })) }
-  function setVariantField(idx, k, v) { setVariants(prev => prev.map((vr, i) => i === idx ? { ...vr, [k]: v } : vr)) }
-  function addVariant() { setVariants(p => [...p, { size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '', image: '' }]) }
-  function removeVariant(idx) { setVariants(p => p.filter((_, i) => i !== idx)) }
+  function buildVariants() {
+    const out = []
+    colors.forEach(col => {
+      AVAILABLE_SIZES.forEach(size => {
+        const s = col.sizes[size]
+        if (s?.enabled) {
+          out.push({
+            color:    col.name,
+            colorHex: col.hex,
+            image:    col.image || null,
+            size,
+            priceAed: parseFloat(s.price) || 0,
+            stockQty: parseInt(s.stock)   || 0,
+            skuCode:  s.sku || `${(form.name || 'PROD').substring(0, 4).toUpperCase()}-${col.name.replace(/\s/g, '').substring(0, 3).toUpperCase()}-${size}`,
+          })
+        }
+      })
+    })
+    return out
+  }
 
   async function save() {
     setError('')
@@ -685,10 +739,10 @@ function ProductForm({ product, categories, onClose, onSaved }) {
       const body = {
         ...form,
         categoryId: form.categoryId ? Number(form.categoryId) : null,
-        variants: variants.map(v => ({ ...v, priceAed: Number(v.priceAed), stockQty: Number(v.stockQty) })),
-        imageUrls: images,
+        variants:   buildVariants(),
+        imageUrls:  images,
       }
-      const res = await fetch(isNew ? '/api/products' : `/api/products/${product.id}`, {
+      const res  = await fetch(isNew ? '/api/products' : `/api/products/${product.id}`, {
         method:  isNew ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body),
@@ -713,7 +767,7 @@ function ProductForm({ product, categories, onClose, onSaved }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-        {/* Left column */}
+        {/* Left column — product info */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.25rem' }}>Product Info</div>
           {[
@@ -750,50 +804,153 @@ function ProductForm({ product, categories, onClose, onSaved }) {
               <input type="checkbox" checked={form.isFeatured} onChange={e => setField('isFeatured', e.target.checked)} /> Featured
             </label>
           </div>
-
-          {/* Images */}
           <div style={{ marginTop: '0.5rem' }}>
             <div style={{ fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.875rem' }}>
-              Upload Product Images (up to 5)
+              Product Images (up to 5)
             </div>
             <ImageDropzone images={images} onChange={setImages} max={5} />
           </div>
         </div>
 
-        {/* Right column — variants */}
+        {/* Right column — color + size variants */}
         <div>
-          <div style={{ fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.75rem' }}>Variants</div>
-          {variants.map((v, idx) => (
-            <div key={idx} style={{ border: '1px solid var(--gray-mid)', padding: '1rem', marginBottom: '0.75rem', position: 'relative' }}>
-              <div style={{ fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.75rem' }}>Variant {idx + 1}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                {[
-                  { key: 'size',     label: 'Size',     placeholder: 'M' },
-                  { key: 'color',    label: 'Color',    placeholder: 'White' },
-                  { key: 'material', label: 'Material', placeholder: '100% Cotton' },
-                  { key: 'skuCode',  label: 'SKU',      placeholder: 'DIF-001-M-WHT' },
-                  { key: 'priceAed', label: 'Price (EGP)', placeholder: '149', type: 'number' },
-                  { key: 'stockQty', label: 'Stock',    placeholder: '50', type: 'number' },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label className="label">{f.label}</label>
-                    <input className="input" type={f.type || 'text'} placeholder={f.placeholder} value={v[f.key] || ''} onChange={e => setVariantField(idx, f.key, e.target.value)} style={{ fontSize: '0.75rem' }} />
+          <div style={{ fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '1rem' }}>
+            Colors &amp; Sizes
+          </div>
+
+          {colors.map((col, colIdx) => {
+            const enabledSizes = Object.entries(col.sizes).filter(([, s]) => s.enabled)
+            return (
+              <div key={col.id} style={{ border: '1px solid var(--gray-mid)', borderRadius: '6px', padding: '1.25rem', marginBottom: '1rem' }}>
+
+                {/* Color header row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  {/* Swatch */}
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: col.hex, border: '1px solid var(--gray-mid)', flexShrink: 0 }} />
+
+                  {/* Color name */}
+                  <input
+                    value={col.name}
+                    onChange={e => updateColor(col.id, 'name', e.target.value)}
+                    placeholder="Color name (e.g. Navy Blue)"
+                    style={{ flex: 1, minWidth: '120px', padding: '6px 10px', border: '1px solid var(--gray-mid)', fontSize: '0.8rem', fontFamily: 'inherit', borderRadius: '3px' }}
+                  />
+
+                  {/* Hex picker */}
+                  <input
+                    type="color"
+                    value={col.hex}
+                    onChange={e => updateColor(col.id, 'hex', e.target.value)}
+                    style={{ width: '36px', height: '32px', border: '1px solid var(--gray-mid)', cursor: 'pointer', padding: '1px', borderRadius: '3px', flexShrink: 0 }}
+                    title="Pick color"
+                  />
+
+                  {/* Color image upload */}
+                  {col.imagePreview ? (
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <img src={col.imagePreview} alt="" style={{ width: '44px', height: '52px', objectFit: 'cover', borderRadius: '3px', border: '1px solid var(--gray-mid)', opacity: col.uploading ? 0.5 : 1 }} />
+                      <button
+                        type="button"
+                        onClick={() => { updateColor(col.id, 'image', ''); updateColor(col.id, 'imagePreview', '') }}
+                        style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--black)', color: 'var(--white)', border: 'none', borderRadius: '50%', width: '16px', height: '16px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                        x
+                      </button>
+                    </div>
+                  ) : (
+                    <label style={{ cursor: col.uploading ? 'default' : 'pointer', flexShrink: 0 }}>
+                      <div style={{ width: '44px', height: '52px', border: '1px dashed var(--gray-mid)', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', color: 'var(--gray-text)', textAlign: 'center', lineHeight: 1.3 }}>
+                        {col.uploading ? '...' : 'Photo'}
+                      </div>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} disabled={col.uploading}
+                        onChange={e => { if (e.target.files?.[0]) handleColorImageUpload(col.id, e.target.files[0]); e.target.value = '' }} />
+                    </label>
+                  )}
+
+                  {/* Remove color */}
+                  {colors.length > 1 && (
+                    <button type="button" onClick={() => removeColor(col.id)}
+                      style={{ background: 'none', border: '1px solid var(--gray-mid)', cursor: 'pointer', fontSize: '0.65rem', color: 'var(--gray-text)', fontFamily: 'inherit', padding: '5px 10px', borderRadius: '3px', flexShrink: 0 }}>
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Size checkboxes */}
+                <div style={{ marginBottom: '0.875rem' }}>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--gray-text)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Available sizes</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {AVAILABLE_SIZES.map(size => (
+                      <label key={size} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.72rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={col.sizes[size]?.enabled || false}
+                          onChange={e => toggleSize(col.id, size, e.target.checked)}
+                        />
+                        {size}
+                      </label>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* Price / stock table for enabled sizes */}
+                {enabledSizes.length > 0 && (
+                  <div>
+                    {/* Bulk apply */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => applyPriceToAll(col.id)}
+                        style={{ fontSize: '0.65rem', padding: '4px 10px', border: '1px solid var(--gray-mid)', background: 'var(--gray-100)', cursor: 'pointer', fontFamily: 'inherit', borderRadius: '3px' }}>
+                        Apply price to all
+                      </button>
+                      <button type="button" onClick={() => applyStockToAll(col.id)}
+                        style={{ fontSize: '0.65rem', padding: '4px 10px', border: '1px solid var(--gray-mid)', background: 'var(--gray-100)', cursor: 'pointer', fontFamily: 'inherit', borderRadius: '3px' }}>
+                        Apply stock to all
+                      </button>
+                    </div>
+
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--gray-mid)' }}>
+                          {['Size', 'Price (EGP)', 'Stock', 'SKU'].map(h => (
+                            <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-text)', fontWeight: 500 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {AVAILABLE_SIZES.filter(sz => col.sizes[sz]?.enabled).map(size => {
+                          const s = col.sizes[size]
+                          return (
+                            <tr key={size} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                              <td style={{ padding: '6px 8px', fontWeight: 500 }}>{size}</td>
+                              <td style={{ padding: '6px 8px' }}>
+                                <input type="number" value={s.price} placeholder="0"
+                                  onChange={e => updateSizeData(col.id, size, 'price', e.target.value)}
+                                  style={{ width: '72px', padding: '5px 7px', border: '1px solid var(--gray-mid)', fontSize: '0.75rem', fontFamily: 'inherit', borderRadius: '3px' }} />
+                              </td>
+                              <td style={{ padding: '6px 8px' }}>
+                                <input type="number" value={s.stock} placeholder="0"
+                                  onChange={e => updateSizeData(col.id, size, 'stock', e.target.value)}
+                                  style={{ width: '60px', padding: '5px 7px', border: '1px solid var(--gray-mid)', fontSize: '0.75rem', fontFamily: 'inherit', borderRadius: '3px' }} />
+                              </td>
+                              <td style={{ padding: '6px 8px' }}>
+                                <input type="text" value={s.sku} placeholder="Auto"
+                                  onChange={e => updateSizeData(col.id, size, 'sku', e.target.value)}
+                                  style={{ width: '90px', padding: '5px 7px', border: '1px solid var(--gray-mid)', fontSize: '0.72rem', fontFamily: 'inherit', borderRadius: '3px' }} />
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-              <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <label className="label" style={{ marginBottom: 0 }}>Color Hex</label>
-                <input type="color" value={v.colorHex || '#000000'} onChange={e => setVariantField(idx, 'colorHex', e.target.value)} style={{ width: '36px', height: '28px', border: '1px solid var(--gray-mid)', cursor: 'pointer', padding: '1px' }} />
-                <span style={{ fontSize: '0.7rem', color: 'var(--gray-text)' }}>{v.colorHex}</span>
-              </div>
-              <VariantImageUpload image={v.image || ''} onChange={url => setVariantField(idx, 'image', url)} />
-              {variants.length > 1 && (
-                <button onClick={() => removeVariant(idx)}
-                  style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#EF4444', fontFamily: 'inherit' }}>Remove</button>
-              )}
-            </div>
-          ))}
-          <button onClick={addVariant} className="btn btn-outline btn-sm" style={{ width: '100%' }}>+ Add Variant</button>
+            )
+          })}
+
+          <button type="button" onClick={addColor}
+            style={{ width: '100%', padding: '10px', border: '1px dashed var(--gray-mid)', background: 'none', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gray-text)', fontFamily: 'inherit', borderRadius: '3px' }}>
+            + Add Color
+          </button>
         </div>
       </div>
 
