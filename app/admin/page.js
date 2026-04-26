@@ -818,16 +818,24 @@ function ProductForm({ product, categories, onClose, onSaved }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.25rem' }}>Product Info</div>
           {[
-            { key: 'name',    label: 'Name',    placeholder: 'Essential White Tee' },
-            { key: 'brand',   label: 'Brand',   placeholder: 'Diffuse' },
-            { key: 'gender',  label: 'Gender',  placeholder: 'Men / Women / Unisex' },
-            { key: 'season',  label: 'Season',  placeholder: 'SS25' },
+            { key: 'name',   label: 'Name',   placeholder: 'Essential White Tee' },
+            { key: 'brand',  label: 'Brand',  placeholder: 'Diffuse' },
+            { key: 'season', label: 'Season', placeholder: 'SS25' },
           ].map(f => (
             <div key={f.key}>
               <label className="label">{f.label}</label>
               <input className="input" placeholder={f.placeholder} value={form[f.key] || ''} onChange={e => setField(f.key, e.target.value)} style={{ fontSize: '0.8rem' }} />
             </div>
           ))}
+          <div>
+            <label className="label">Gender</label>
+            <select className="input" value={form.gender || ''} onChange={e => setField('gender', e.target.value)} style={{ fontSize: '0.8rem' }}>
+              <option value="">— None —</option>
+              {['Men', 'Women', 'Unisex', 'Kids'].map(g => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="label">Category</label>
             <select className="input" value={form.categoryId ? String(form.categoryId) : ''} onChange={e => setField('categoryId', e.target.value ? Number(e.target.value) : '')} style={{ fontSize: '0.8rem' }}>
