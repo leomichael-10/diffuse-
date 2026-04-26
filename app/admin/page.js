@@ -830,9 +830,13 @@ function ProductForm({ product, categories, onClose, onSaved }) {
           ))}
           <div>
             <label className="label">Category</label>
-            <select className="input" value={form.categoryId || ''} onChange={e => setField('categoryId', e.target.value)} style={{ fontSize: '0.8rem' }}>
+            <select className="input" value={form.categoryId ? String(form.categoryId) : ''} onChange={e => setField('categoryId', e.target.value ? Number(e.target.value) : '')} style={{ fontSize: '0.8rem' }}>
               <option value="">— None —</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.parentId ? `  — ${c.name}` : c.name}</option>)}
+              {categories.map(c => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.parentId ? `  — ${c.name}` : c.name}
+                </option>
+              ))}
             </select>
           </div>
           <div>
