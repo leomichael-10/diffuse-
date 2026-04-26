@@ -6,28 +6,54 @@ import Navbar from '../../../../components/Navbar.js'
 import ImageDropzone from '../../../../components/ImageDropzone.js'
 
 function VariantImageUpload({ image, onChange }) {
-  const [uploading, setUploading] = useState(false)
+  const [uploading,  setUploading]  = useState(false)
+  const [localPreview, setLocalPreview] = useState(null)
+  const [uploadError,  setUploadError]  = useState('')
+
   async function handleFile(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    e.target.value = ''           // reset so same file can be re-selected
+    const preview = URL.createObjectURL(file)
+    setLocalPreview(preview)      // show immediately
+    setUploadError('')
     setUploading(true)
     try {
       const fd = new FormData()
       fd.append('files', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const res  = await fetch('/api/upload', { method: 'POST', body: fd })
       const data = await res.json()
-      if (data.urls?.[0]) onChange(data.urls[0])
-    } finally { setUploading(false) }
+      if (data.urls?.[0]) {
+        onChange(data.urls[0])    // persist Cloudinary URL to parent state
+        setLocalPreview(null)     // parent will now supply the canonical image
+      } else {
+        throw new Error(data.error || 'Upload returned no URL')
+      }
+    } catch (err) {
+      setLocalPreview(null)
+      setUploadError('Upload failed')
+      console.error('Variant image upload error:', err)
+    } finally {
+      setUploading(false)
+    }
   }
+
+  const displayImage = localPreview || image || null
+
   return (
     <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
       <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>Variant Image</span>
-      {image && <img src={image} alt="" style={{ width: 40, height: 48, objectFit: 'cover', border: '1px solid #E2E8F0', borderRadius: 4 }} />}
-      <label style={{ cursor: 'pointer', fontSize: '0.75rem', color: '#6366F1', textDecoration: 'underline' }}>
-        {uploading ? 'Uploading…' : image ? 'Change' : 'Upload photo'}
+      {displayImage && (
+        <img src={displayImage} alt="" style={{ width: 40, height: 48, objectFit: 'cover', border: '1px solid #E2E8F0', borderRadius: 4, opacity: uploading ? 0.5 : 1 }} />
+      )}
+      <label style={{ cursor: uploading ? 'default' : 'pointer', fontSize: '0.75rem', color: uploading ? '#94A3B8' : '#6366F1', textDecoration: 'underline' }}>
+        {uploading ? 'Uploading…' : displayImage ? 'Change' : 'Upload photo'}
         <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} style={{ display: 'none' }} disabled={uploading} />
       </label>
-      {image && <button onClick={() => onChange('')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#EF4444', fontFamily: 'inherit' }}>Remove</button>}
+      {!uploading && displayImage && (
+        <button type="button" onClick={() => { onChange(''); setLocalPreview(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#EF4444', fontFamily: 'inherit' }}>Remove</button>
+      )}
+      {uploadError && <span style={{ fontSize: '0.7rem', color: '#EF4444' }}>{uploadError}</span>}
     </div>
   )
 }

@@ -283,7 +283,7 @@ export default function AdminPage() {
               {tab === 'Products' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
-                    <button onClick={() => setEditProd({ name: '', brand: 'Diffuse', gender: '', season: '', isActive: true, isFeatured: false, categoryId: '', description: '', care: '', variants: [{ size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '' }], images: [] })}
+                    <button onClick={() => setEditProd({ name: '', brand: 'Diffuse', gender: '', season: '', isActive: true, isFeatured: false, categoryId: '', description: '', care: '', variants: [{ size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '', image: '' }], images: [] })}
                       className="btn btn-black btn-sm">Add Product</button>
                   </div>
 
@@ -611,32 +611,54 @@ export default function AdminPage() {
 
 /* ─── Inline Product Form ─── */
 function VariantImageUpload({ image, onChange }) {
-  const [uploading, setUploading] = useState(false)
+  const [uploading,    setUploading]    = useState(false)
+  const [localPreview, setLocalPreview] = useState(null)
+  const [uploadError,  setUploadError]  = useState('')
 
   async function handleFile(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    e.target.value = ''
+    const preview = URL.createObjectURL(file)
+    setLocalPreview(preview)
+    setUploadError('')
     setUploading(true)
     try {
       const fd = new FormData()
       fd.append('files', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const res  = await fetch('/api/upload', { method: 'POST', body: fd })
       const data = await res.json()
-      if (data.urls?.[0]) onChange(data.urls[0])
+      if (data.urls?.[0]) {
+        onChange(data.urls[0])
+        setLocalPreview(null)
+      } else {
+        throw new Error(data.error || 'Upload returned no URL')
+      }
+    } catch (err) {
+      setLocalPreview(null)
+      setUploadError('Upload failed')
+      console.error('Variant image upload error:', err)
     } finally {
       setUploading(false)
     }
   }
 
+  const displayImage = localPreview || image || null
+
   return (
     <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
       <label className="label" style={{ marginBottom: 0 }}>Variant Image</label>
-      {image && <img src={image} alt="" style={{ width: 40, height: 48, objectFit: 'cover', border: '1px solid var(--gray-mid)' }} />}
-      <label style={{ cursor: 'pointer', fontSize: '0.7rem', color: 'var(--gray-text)', textDecoration: 'underline' }}>
-        {uploading ? 'Uploading…' : image ? 'Change' : 'Upload'}
+      {displayImage && (
+        <img src={displayImage} alt="" style={{ width: 40, height: 48, objectFit: 'cover', border: '1px solid var(--gray-mid)', opacity: uploading ? 0.5 : 1 }} />
+      )}
+      <label style={{ cursor: uploading ? 'default' : 'pointer', fontSize: '0.7rem', color: uploading ? 'var(--gray-400)' : 'var(--gray-text)', textDecoration: 'underline' }}>
+        {uploading ? 'Uploading…' : displayImage ? 'Change' : 'Upload'}
         <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} style={{ display: 'none' }} disabled={uploading} />
       </label>
-      {image && <button onClick={() => onChange('')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#EF4444', fontFamily: 'inherit' }}>Remove</button>}
+      {!uploading && displayImage && (
+        <button type="button" onClick={() => { onChange(''); setLocalPreview(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#EF4444', fontFamily: 'inherit' }}>Remove</button>
+      )}
+      {uploadError && <span style={{ fontSize: '0.65rem', color: '#EF4444' }}>{uploadError}</span>}
     </div>
   )
 }
@@ -644,7 +666,7 @@ function VariantImageUpload({ image, onChange }) {
 function ProductForm({ product, categories, onClose, onSaved }) {
   const isNew = !product.id
   const [form,    setForm]    = useState({ ...product })
-  const [variants, setVariants] = useState(product.variants?.length ? product.variants : [{ size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '' }])
+  const [variants, setVariants] = useState(product.variants?.length ? product.variants : [{ size: '', color: '', colorHex: '#000000', material: '', priceAed: '', stockQty: '', skuCode: '', image: '' }])
   const [images,  setImages]  = useState(
     (product.images || []).map(img => typeof img === 'string' ? img : img.url).filter(Boolean)
   )
