@@ -677,7 +677,8 @@ export default function ProductPage() {
                           const p        = item.variant?.product
                           const pvariants = p?.variants || []
                           const itemSel  = bSel[item.id] || {}
-                          const img      = p?.images?.[0]?.url || item.variant?.image || null
+                          const colorVariant = pvariants.find(v => v.color === itemSel.color && v.image)
+                          const img      = colorVariant?.image || p?.images?.[0]?.url || item.variant?.image || null
 
                           // Unique colors
                           const colors = [...new Map(pvariants.filter(v => v.color).map(v => [v.color, { color: v.color, colorHex: v.colorHex }])).values()]
