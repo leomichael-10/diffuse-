@@ -24,7 +24,7 @@ export default function AdminPage() {
   const [stats,     setStats]     = useState(null)
   const [bundles,   setBundles]   = useState([])
   const [promos,    setPromos]    = useState([])
-  const [newBundle, setNewBundle] = useState({ name: '', description: '', imageUrl: '', priceAed: '' })
+  const [newBundle, setNewBundle] = useState({ name: '', description: '', priceAed: '', product1Id: '', variant1Id: '', product2Id: '', variant2Id: '' })
   const [newPromo,  setNewPromo]  = useState({ code: '', discountType: 'percent', discountValue: '', minOrderAed: '', maxUses: '', expiresAt: '' })
 
   useEffect(() => {
@@ -61,10 +61,19 @@ export default function AdminPage() {
   }
 
   async function deleteProduct(id) {
-    if (!confirm('Delete this product?')) return
-    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
-    if (res.ok) setProducts(prev => prev.filter(p => p.id !== id))
-    else alert('Could not delete product')
+    if (!confirm('Are you sure you want to delete this product? This cannot be undone.')) return
+    try {
+      const res  = await fetch(`/api/products/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (res.ok) {
+        setProducts(prev => prev.filter(p => p.id !== id))
+        flash(data.message || 'Product deleted')
+      } else {
+        alert('Error: ' + (data.error || 'Could not delete product'))
+      }
+    } catch (err) {
+      alert('Network error: ' + err.message)
+    }
   }
 
   async function toggleFeatured(product) {
@@ -456,20 +465,64 @@ export default function AdminPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                       <input className="input-line" placeholder="Bundle name" value={newBundle.name}
                         onChange={e => setNewBundle(b => ({ ...b, name: e.target.value }))} />
-                      <input className="input-line" placeholder="Price (EGP)" type="number" value={newBundle.priceAed}
+                      <input className="input-line" placeholder="Bundle price (EGP)" type="number" value={newBundle.priceAed}
                         onChange={e => setNewBundle(b => ({ ...b, priceAed: e.target.value }))} />
-                      <input className="input-line" placeholder="Image URL (optional)" value={newBundle.imageUrl}
-                        onChange={e => setNewBundle(b => ({ ...b, imageUrl: e.target.value }))} />
                       <input className="input-line" placeholder="Description (optional)" value={newBundle.description}
                         onChange={e => setNewBundle(b => ({ ...b, description: e.target.value }))} />
                     </div>
+
+                    {/* Product 1 */}
+                    <div style={{ marginBottom: '0.875rem' }}>
+                      <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.4rem' }}>Product 1</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <select className="input-line" value={newBundle.product1Id}
+                          onChange={e => setNewBundle(b => ({ ...b, product1Id: e.target.value, variant1Id: '' }))}>
+                          <option value="">— Select product —</option>
+                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                        <select className="input-line" value={newBundle.variant1Id}
+                          onChange={e => setNewBundle(b => ({ ...b, variant1Id: e.target.value }))}
+                          disabled={!newBundle.product1Id}>
+                          <option value="">— Select variant —</option>
+                          {(products.find(p => String(p.id) === String(newBundle.product1Id))?.variants || []).map(v => (
+                            <option key={v.id} value={v.id}>{[v.color, v.size].filter(Boolean).join(' / ')} — EGP {Number(v.priceAed).toLocaleString('en-EG')}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Product 2 */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-text)', marginBottom: '0.4rem' }}>Product 2</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <select className="input-line" value={newBundle.product2Id}
+                          onChange={e => setNewBundle(b => ({ ...b, product2Id: e.target.value, variant2Id: '' }))}>
+                          <option value="">— Select product —</option>
+                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                        <select className="input-line" value={newBundle.variant2Id}
+                          onChange={e => setNewBundle(b => ({ ...b, variant2Id: e.target.value }))}
+                          disabled={!newBundle.product2Id}>
+                          <option value="">— Select variant —</option>
+                          {(products.find(p => String(p.id) === String(newBundle.product2Id))?.variants || []).map(v => (
+                            <option key={v.id} value={v.id}>{[v.color, v.size].filter(Boolean).join(' / ')} — EGP {Number(v.priceAed).toLocaleString('en-EG')}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
                     <button className="btn btn-black btn-sm" onClick={async () => {
                       if (!newBundle.name || !newBundle.priceAed) return alert('Name and price required')
-                      const res = await fetch('/api/bundles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newBundle) })
+                      if (!newBundle.variant1Id || !newBundle.variant2Id) return alert('Select a variant for both products')
+                      const items = [
+                        { variantId: Number(newBundle.variant1Id), quantity: 1 },
+                        { variantId: Number(newBundle.variant2Id), quantity: 1 },
+                      ]
+                      const res = await fetch('/api/bundles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newBundle.name, description: newBundle.description, priceAed: newBundle.priceAed, items }) })
                       if (res.ok) {
                         const b = await res.json()
                         setBundles(prev => [b, ...prev])
-                        setNewBundle({ name: '', description: '', imageUrl: '', priceAed: '' })
+                        setNewBundle({ name: '', description: '', priceAed: '', product1Id: '', variant1Id: '', product2Id: '', variant2Id: '' })
                       } else alert('Failed to create bundle')
                     }}>Create Bundle</button>
                   </div>
@@ -492,7 +545,9 @@ export default function AdminPage() {
                             <tr key={b.id} style={{ borderBottom: '1px solid var(--gray-mid)' }}>
                               <td style={{ padding: '0.875rem 1rem', fontSize: '0.8rem', fontWeight: 500 }}>{b.name}</td>
                               <td style={{ padding: '0.875rem 1rem', fontSize: '0.8rem' }}>{formatPrice(b.priceAed)}</td>
-                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', color: 'var(--gray-text)' }}>{b.items?.length || 0}</td>
+                              <td style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', color: 'var(--gray-text)' }}>
+                                {b.items?.map(i => i.variant?.product?.name || `Variant #${i.variantId}`).join(' + ') || '—'}
+                              </td>
                               <td style={{ padding: '0.875rem 1rem' }}>
                                 <span style={{ fontSize: '0.65rem', letterSpacing: '0.08em', color: b.isActive ? '#2e7d32' : 'var(--gray-text)' }}>
                                   {b.isActive ? 'Active' : 'Hidden'}

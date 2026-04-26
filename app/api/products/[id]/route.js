@@ -93,12 +93,48 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const { id: rawId } = await params
-  const id = Number(rawId)
-  if (!id || isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
   const role = request.headers.get('x-user-role')
-  if (role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  await prisma.product.delete({ where: { id } })
-  return NextResponse.json({ message: 'Product deleted' })
+  try {
+    const { id: rawId } = await params
+    const id = parseInt(rawId, 10)
+    if (!id || isNaN(id)) return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 })
+
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        variants: {
+          include: {
+            orderItems:     true,
+            stockMovements: true,
+            bundleItems:    true,
+          },
+        },
+      },
+    })
+
+    if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+
+    const hasOrders = product.variants.some(v => v.orderItems.length > 0)
+    if (hasOrders) {
+      await prisma.product.update({ where: { id }, data: { isActive: false } })
+      return NextResponse.json({ success: true, message: 'Product deactivated (has order history)' })
+    }
+
+    const variantIds = product.variants.map(v => v.id)
+
+    await prisma.stockMovement.deleteMany({ where: { variantId: { in: variantIds } } })
+    await prisma.bundleItem.deleteMany({ where: { variantId: { in: variantIds } } })
+    await prisma.wishlistItem.deleteMany({ where: { productId: id } })
+    await prisma.review.deleteMany({ where: { productId: id } })
+    await prisma.productImage.deleteMany({ where: { productId: id } })
+    await prisma.productVariant.deleteMany({ where: { productId: id } })
+    await prisma.product.delete({ where: { id } })
+
+    return NextResponse.json({ success: true, message: 'Product deleted' })
+  } catch (error) {
+    console.error('DELETE /api/products/[id] error:', error.message)
+    return NextResponse.json({ error: 'Could not delete product: ' + error.message }, { status: 500 })
+  }
 }
